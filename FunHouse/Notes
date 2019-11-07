@@ -1,0 +1,41 @@
+XCODE 9
+
+VPA info: plugin is INTEL, AVD_id = 1080004, AVD_api.Create:0x109a6855a
+2019-11-06 07:52:50.418452-0500 Core Image Fun House[13048:825468] <NSWindowGraphicsContext: 0x6000002ccde0>
+2019-11-06 07:52:50.424159-0500 Core Image Fun House[13048:825468] SCdraw to screen 1
+2019-11-06 07:52:50.424562-0500 Core Image Fun House[13048:825468] SCdraw to context 1
+2019-11-06 07:52:50.424592-0500 Core Image Fun House[13048:825468] SCIdraw Rect
+2019-11-06 07:52:50.425859-0500 Core Image Fun House[13048:825468] SCIdraw to screen 1
+2019-11-06 07:52:50.780003-0500 Core Image Fun House[13048:825624] errors encountered while discovering extensions: Error Domain=PlugInKit Code=13 "query cancelled" UserInfo={NSLocalizedDescription=query cancelled}
+2019-11-06 07:52:53.489782-0500 Core Image Fun House[13048:825468] <NSWindowGraphicsContext: 0x6000002ccde0>
+2019-11-06 07:52:53.489828-0500 Core Image Fun House[13048:825468] SCdraw to screen 1
+2019-11-06 07:52:53.489879-0500 Core Image Fun House[13048:825468] SCdraw to context 1
+2019-11-06 07:52:53.489896-0500 Core Image Fun House[13048:825468] SCIdraw Rect
+2019-11-06 07:52:53.502086-0500 Core Image Fun House[13048:825468] SCIdraw to screen 1
+2019-11-06 08:01:15.106599-0500 Core Image Fun House[13048:825468] <NSWindowGraphicsContext: 0x6000002ccde0>
+2019-11-06 08:01:15.106655-0500 Core Image Fun House[13048:825468] SCdraw to screen 1
+2019-11-06 08:01:15.106726-0500 Core Image Fun House[13048:825468] SCdraw to context 1
+2019-11-06 08:01:15.106750-0500 Core Image Fun House[13048:825468] SCIdraw Rect
+2019-11-06 08:01:15.106860-0500 Core Image Fun House[13048:825468] SCIdraw to screen 1
+
+XCODE 10
+
+VPA info: plugin is INTEL, AVD_id = 1080004, AVD_api.Create:0x10874d55a
+2019-11-06 08:03:45.745531-0500 Core Image Fun House[13124:834033] <NSBitmapGraphicsContext: 0x600000d15b90>
+2019-11-06 08:03:45.836955-0500 Core Image Fun House[13124:834033] SCdraw to screen 1
+2019-11-06 08:03:45.837509-0500 Core Image Fun House[13124:834033] SCdraw to context 1
+2019-11-06 08:03:45.837531-0500 Core Image Fun House[13124:834033] SCIdraw Rect
+2019-11-06 08:03:45.838931-0500 Core Image Fun House[13124:834033] SCIdraw to screen 1
+objc[13124]: Class FIFinderSyncExtensionHost is implemented in both /System/Library/PrivateFrameworks/FinderKit.framework/Versions/A/FinderKit (0x7fffa30c03d8) and /System/Library/PrivateFrameworks/FileProvider.framework/OverrideBundles/FinderSyncCollaborationFileProviderOverride.bundle/Contents/MacOS/FinderSyncCollaborationFileProviderOverride (0x10b3f6f50). One of the two will be used. Which one is undefined.
+2019-11-06 08:03:49.280589-0500 Core Image Fun House[13124:834160] errors encountered while discovering extensions: Error Domain=PlugInKit Code=13 "query cancelled" UserInfo={NSLocalizedDescription=query cancelled}
+2019-11-06 08:03:49.484693-0500 Core Image Fun House[13124:834033] <NSBitmapGraphicsContext: 0x600000cd82a0>
+2019-11-06 08:03:49.484734-0500 Core Image Fun House[13124:834033] SCdraw to screen 1
+2019-11-06 08:03:49.484749-0500 Core Image Fun House[13124:834033] SCdraw to context 1
+2019-11-06 08:03:49.484756-0500 Core Image Fun House[13124:834033] SCIdraw Rect
+2019-11-06 08:03:49.498522-0500 Core Image Fun House[13124:834033] SCIdraw to screen 1
+2019-11-06 08:03:52.185113-0500 Core Image Fun House[13124:834033] <NSBitmapGraphicsContext: 0x600000d45560>
+2019-11-06 08:03:52.185154-0500 Core Image Fun House[13124:834033] SCdraw to screen 1
+2019-11-06 08:03:52.185166-0500 Core Image Fun House[13124:834033] SCdraw to context 1
+2019-11-06 08:03:52.185173-0500 Core Image Fun House[13124:834033] SCIdraw Rect
+2019-11-06 08:03:52.185242-0500 Core Image Fun House[13124:834033] SCIdraw to screen 1
+
