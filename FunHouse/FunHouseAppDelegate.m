@@ -121,9 +121,11 @@
         [op setAllowsMultipleSelection:NO];
         [op setDirectoryURL:[NSURL fileURLWithPath:path2 isDirectory:YES]];
         [op setAllowedFileTypes:[NSArray arrayWithObjects:@"jpeg", @"jpg", @"tiff", @"tif", @"png", @"crw", @"cr2", @"raf", @"mrw", @"nef", @"srf", @"exr", @"funhouse", nil]];
-        
-        if ([op runModal] == NSOKButton)
+
+        if ([op runModal] == NSOKButton) {
             [[NSDocumentController sharedDocumentController] openDocumentWithContentsOfURL:[[op URLs] objectAtIndex:0] display:YES error:&err];
+        }
+
     }
 }
 

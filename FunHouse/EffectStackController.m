@@ -753,6 +753,7 @@
     frm.origin.y -= delta;
     [[self window] setFrame:frm display:YES animate:YES]; // animate the window size change
     // and move all the boxes into place
+
     fvtop = inspectorheight - inspectorTopY;
     for (i = 0; i < count; i++)
         {

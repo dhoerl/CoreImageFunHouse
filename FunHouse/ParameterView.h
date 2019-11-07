@@ -61,11 +61,7 @@ typedef enum
 @class EffectStackController;
 @class FunHouseImageView;
 
-#if MAC_OS_X_VERSION_MAX_ALLOWED <= MAC_OS_X_VERSION_10_5
-@interface ParameterView : NSView
-#else
 @interface ParameterView : NSView <NSTextViewDelegate>
-#endif
 {
     CIFilter *filter;                   // filter this UI element belongs to
     NSMutableDictionary *dict;          // dictionary for text layer this slider/text view belongs to

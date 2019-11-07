@@ -106,11 +106,6 @@
     Accessors and Setters
 */
 
-- (CIContext *)context
-{
-    return [[NSGraphicsContext currentContext] CIContext];
-}
-
 - (void)setFunHouseWindowController:(FunHouseWindowController *)c
 {
     controller = c;
@@ -262,8 +257,9 @@
     CGContextSetRGBFillColor(cg, 0.0, 0.0, 0.0, 1.0);
     if (!movingNow)
     {
- 		NSGraphicsContext	    *graphicsContext = [NSGraphicsContext graphicsContextWithGraphicsPort:cg flipped:NO];
-   
+ 		NSGraphicsContext *graphicsContext = [NSGraphicsContext graphicsContextWithGraphicsPort:cg flipped:NO];
+        assert(graphicsContext);
+    
 		[NSGraphicsContext setCurrentContext:graphicsContext];
 		[str drawAtPoint:NSMakePoint(pt.x + 4.5, pt.y + 1.5) withAttributes:[NSDictionary dictionaryWithObjectsAndKeys:[NSFont systemFontOfSize:13.0], NSFontNameAttribute, [NSColor blackColor], NSForegroundColorAttributeName, nil]];
         CGContextSetRGBFillColor(cg, 1.0, 1.0, 1.0, 1.0);
@@ -272,11 +268,10 @@
 }
 
 // render origin handles using AppKit directly
-- (CIImage *)drawPoints:(CIImage *)im
+- (CIImage *)drawPoints:(CIImage *)im inCIContext:(CIContext *)context
 {
     NSInteger i, count;
     CGFloat x, y, width, height;
-    CIContext *context;
     CIFilter *f;
     NSEnumerator *e;
     CIVector *vec;
@@ -294,8 +289,8 @@
     NSRect bounds;
     CIImage *image;
     
-	NSGraphicsContext	    *savedContext = [NSGraphicsContext currentContext];
-    context = [[NSGraphicsContext currentContext] CIContext];
+	NSGraphicsContext *printingContext = [NSGraphicsContext currentContext];
+
     bounds = [self bounds];
     layer = [context createCGLayerWithSize:CGSizeMake(NSWidth(bounds), NSHeight(bounds)) info:nil];
     cg = CGLayerGetContext(layer);
@@ -303,6 +298,7 @@
     // enumerate filters, images, text placements in the effect stack (bottom-to-top)
     es = [d effectStack];
     count = [es layerCount];
+
     for (i = 0; i < count; i++)
     {
         // if the layer isn't enabled, don't show the handle either
@@ -415,7 +411,10 @@
     f = [CIFilter filterWithName:@"CISourceOverCompositing"];
     [f setValue:im forKey:@"inputBackgroundImage"];
     [f setValue:image forKey:@"inputImage"];
-	[NSGraphicsContext setCurrentContext:savedContext];
+
+    if (printingContext && printingContext != [NSGraphicsContext currentContext]) {
+        [NSGraphicsContext setCurrentContext:printingContext];
+    }
     return [f valueForKey:@"outputImage"];
 }
 
@@ -470,16 +469,19 @@
     cgr = CGRectMake(r.origin.x, r.origin.y, r.size.width, r.size.height);
     // note: surround a core image evaluation with its own autorelease pool to prevent a huge amount of buildup
     // during a slider drag, for instance.
+
+    NSGraphicsContext *printingContext = [NSGraphicsContext currentContext];
+
     NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
     // compute the core image graph for the view (based on the effect stack)
     im = [self coreImageResult];
     // display origin handles when the mouse is inside the view, and when a modal vwindow isn't present...
     if (displayingPoints && [NSApp modalWindow] == nil)
-        im = [self drawPoints:im];
+        im = [self drawPoints:im inCIContext:context];
     // if successful, draw the image
     if (im != nil && context != nil)
     {
-	if ([NSGraphicsContext currentContextDrawingToScreen])
+	if (!printingContext)
 	{
         [context drawImage:im inRect:cgr fromRect:cgr];
 	}
@@ -491,8 +493,7 @@
 
 	    if (cgImage != NULL)
 	    {
-            CGContextDrawImage ([[NSGraphicsContext currentContext]
-                                 graphicsPort], cgr, cgImage);
+            CGContextDrawImage ([printingContext CGContext], cgr, cgImage);
             CGImageRelease (cgImage);
 	    }
 	}

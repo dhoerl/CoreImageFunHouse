@@ -42,7 +42,7 @@
 	<key>CFBundleIconFile</key>
 	<string>NSApplicationIcon</string>
 	<key>CFBundleIdentifier</key>
-	<string>com.example.apple-samplecode.${PRODUCT_NAME:rfc1034identifier}</string>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundlePackageType</key>

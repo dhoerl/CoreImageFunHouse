@@ -50,7 +50,7 @@
 #import <OpenGL/OpenGL.h>
 #import <OpenGL/gl.h>
 
-@interface SampleCIView (internalCalls)
+@interface SampleCIView ()
 
 - (BOOL)displaysWhenScreenProfileChanges;
 - (void)viewWillMoveToWindow:(NSWindow*)newWindow;
@@ -75,9 +75,7 @@
 			NSOpenGLPFAAccelerated,
 			NSOpenGLPFANoRecovery,
 			NSOpenGLPFAColorSize, 32,
-#if MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_5
 			NSOpenGLPFAAllowOfflineRenderers,  /* allow use of offline renderers               */
-#endif
 			0
 		};
 		
@@ -132,6 +130,8 @@
 
 - (void)prepareOpenGL
 {
+    [super prepareOpenGL];
+
     GLint parm = 1;
 	
     /* Enable beam-synced updates. */
@@ -140,7 +140,8 @@
 	
     /* Make sure that everything we don't need is disabled. Some of these
      * are enabled by default and can slow down rendering. */
-	
+    NSLog(@"%s", glGetString(GL_VERSION));
+
     glDisable (GL_ALPHA_TEST);
     glDisable (GL_DEPTH_TEST);
     glDisable (GL_SCISSOR_TEST);
@@ -224,25 +225,6 @@
         // Create a new CIContext using the new output color space		
         [_context release];
 		
-#if MAC_OS_X_VERSION_MAX_ALLOWED <= MAC_OS_X_VERSION_10_5
-		CMProfileRef displayProfile = NULL;
-		CGColorSpaceRef displayColorSpace = NULL;
-		// Ask ColorSync for our current display's profile
-		CMGetProfileByAVID((CMDisplayIDType)_did, &displayProfile);
-		displayColorSpace = CGColorSpaceCreateWithPlatformColorSpace(displayProfile);
-		CMCloseProfile(displayProfile);
-
-		if(_contextOptions)
-		{
-			[_contextOptions setObject:(id)displayColorSpace forKey:kCIContextOutputColorSpace];
-		} else {
-			_contextOptions = [[NSMutableDictionary dictionaryWithObject:(id)displayColorSpace forKey:kCIContextOutputColorSpace] retain];
-		}
-		[_contextOptions setObject:[[NSUserDefaults standardUserDefaults] objectForKey:@"useSoftwareRenderer"] forKey:kCIContextUseSoftwareRenderer];
-		
-		_context = [[CIContext contextWithCGLContext:_cglContext pixelFormat:[_pf CGLPixelFormatObj] options:_contextOptions] retain];
-		CGColorSpaceRelease(displayColorSpace);
-#else		
 		if(_contextOptions)
 		{
 			[_contextOptions setObject:[[NSUserDefaults standardUserDefaults] objectForKey:@"useSoftwareRenderer"] forKey:kCIContextUseSoftwareRenderer];
@@ -252,7 +234,6 @@
 		// For 10.6 onwards we use the new API but do not pass in a colorspace as. 
 		// Since the cgl context will be rendered to the display, it is valid to rely on CI to get the colorspace from the context.
 		_context = [[CIContext contextWithCGLContext:_cglContext pixelFormat:[_pf CGLPixelFormatObj] colorSpace:nil options:_contextOptions] retain];    
-#endif
 	}
     CGLUnlockContext(_cglContext);
     
@@ -263,9 +244,9 @@
 {
     CGRect ir, rr;
     CGImageRef cgImage;
-	
+
     [[self openGLContext] makeCurrentContext];
-	
+
     /* Allocate a CoreImage rendering context using the view's OpenGL
      * context as its destination if none already exists. */
 	
@@ -273,25 +254,26 @@
 		[self displayProfileChanged:nil];
 	
     ir = CGRectIntegral (*(CGRect *)&r);
-	
-    if ([NSGraphicsContext currentContextDrawingToScreen])
+
+    NSGraphicsContext *printingContext = [NSGraphicsContext currentContext];    // nil other than printing
+    if (!printingContext)
     {
 		[self updateMatrices];
-		
+
 		/* Clear the specified subrect of the OpenGL surface then
 		 * render the image into the view. Use the GL scissor test to
 		 * clip to * the subrect. Ask CoreImage to generate an extra
 		 * pixel in case * it has to interpolate (allow for hardware
 		 * inaccuracies) */
-		
+
 		rr = CGRectIntersection (CGRectInset (ir, -1.0f, -1.0f),
 								 *(CGRect *)&_lastBounds);
-		
+
 		glScissor (ir.origin.x, ir.origin.y, ir.size.width, ir.size.height);
 		glEnable (GL_SCISSOR_TEST);
-		
+
 		glClear (GL_COLOR_BUFFER_BIT);
-		
+
 		if ([self respondsToSelector:@selector (drawRect:inCIContext:)])  // for subclasses to provide their own drawing method
 		{
 			[self drawRect:*(NSRect *)&rr inCIContext:_context];
@@ -299,14 +281,16 @@
 		else if (_image != nil)
 		{
 			[_context drawImage:_image inRect:rr fromRect:rr];
-		}
-		
+		} else {
+            assert(!"WTF");
+        }
+
 		glDisable (GL_SCISSOR_TEST);
-		
+
 		/* Flush the OpenGL command stream. If the view is double
 		 * buffered this should be replaced by [[self openGLContext]
 		 * flushBuffer]. */
-		
+
 		glFlush ();
     }
     else
@@ -323,8 +307,7 @@
 			
 			if (cgImage != NULL)
 			{
-				CGContextDrawImage ([[NSGraphicsContext currentContext]
-									 graphicsPort], ir, cgImage);
+				CGContextDrawImage ([printingContext CGContext], ir, cgImage);
 				CGImageRelease (cgImage);
 			}
 		}

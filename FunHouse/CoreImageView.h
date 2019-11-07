@@ -92,7 +92,6 @@ enum
 - (void)awakeFromNib;
 
 - (void)setFunHouseWindowController:(FunHouseWindowController *)c;
-- (CIContext *)context;
 
 // view transform setters and getters
 - (void)setViewTransformScale:(CGFloat)scale;
