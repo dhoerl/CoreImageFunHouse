@@ -113,6 +113,8 @@
             [manager copyItemAtPath:sourcefile toPath:destfile error:&err];
         }
     }
+
+#if 1
     // only automatically open a file if none has already been opened
     if ([[[NSDocumentController sharedDocumentController] documents] count] == 0)
     {
@@ -123,10 +125,14 @@
         [op setAllowedFileTypes:[NSArray arrayWithObjects:@"jpeg", @"jpg", @"tiff", @"tif", @"png", @"crw", @"cr2", @"raf", @"mrw", @"nef", @"srf", @"exr", @"funhouse", nil]];
 
         if ([op runModal] == NSOKButton) {
-            [[NSDocumentController sharedDocumentController] openDocumentWithContentsOfURL:[[op URLs] objectAtIndex:0] display:YES error:&err];
+            //[[NSDocumentController sharedDocumentController] openDocumentWithContentsOfURL:[[op URLs] objectAtIndex:0] display:YES error:&err];
+            [[NSDocumentController sharedDocumentController] openDocumentWithContentsOfURL:[[op URLs] objectAtIndex:0] display:YES completionHandler:^(NSDocument * _Nullable document, BOOL documentWasAlreadyOpen, NSError * _Nullable error) {
+                    if (error) { NSLog(@"ERROR: %@", error); }
+                }
+            ];
         }
-
     }
+#endif
 }
 
 - (IBAction)showPreferences:(id)sender

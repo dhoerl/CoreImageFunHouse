@@ -265,6 +265,9 @@
 		 * clip to * the subrect. Ask CoreImage to generate an extra
 		 * pixel in case * it has to interpolate (allow for hardware
 		 * inaccuracies) */
+//glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
+//glClear (GL_COLOR_BUFFER_BIT);
+
 
 		rr = CGRectIntersection (CGRectInset (ir, -1.0f, -1.0f),
 								 *(CGRect *)&_lastBounds);
@@ -276,6 +279,7 @@
 
 		if ([self respondsToSelector:@selector (drawRect:inCIContext:)])  // for subclasses to provide their own drawing method
 		{
+NSLog(@"SI DRAWRECT");
 			[self drawRect:*(NSRect *)&rr inCIContext:_context];
 		}
 		else if (_image != nil)

@@ -291,7 +291,10 @@
     
 	NSGraphicsContext *printingContext = [NSGraphicsContext currentContext];
 
-    bounds = [self bounds];
+CGRect origRect = im.extent;
+//bounds = [self bounds];
+bounds = origRect;
+
     layer = [context createCGLayerWithSize:CGSizeMake(NSWidth(bounds), NSHeight(bounds)) info:nil];
     cg = CGLayerGetContext(layer);
     d = (FunHouseDocument *)[controller document];
@@ -408,6 +411,9 @@
     }
     image = [[[CIImage alloc] initWithCGLayer:layer] autorelease];
     CGLayerRelease(layer);
+NSLog(@"J1 %@", NSStringFromRect(image.extent));
+NSLog(@"J2 %@", NSStringFromRect(im.extent));
+
     f = [CIFilter filterWithName:@"CISourceOverCompositing"];
     [f setValue:im forKey:@"inputBackgroundImage"];
     [f setValue:image forKey:@"inputImage"];
@@ -415,7 +421,9 @@
     if (printingContext && printingContext != [NSGraphicsContext currentContext]) {
         [NSGraphicsContext setCurrentContext:printingContext];
     }
-    return [f valueForKey:@"outputImage"];
+    image = [f valueForKey:@"outputImage"];
+NSLog(@"J3 %@", NSStringFromRect(image.extent));
+return image;
 }
 
 // compute the whole core image graph for the view (not yet evaluated!)
@@ -429,16 +437,27 @@
         return nil;
     // compute the core image graph for our view
     CIImage *res = [es coreImageResultForRect:[self bounds]];
+    CGRect origExtent = res.extent;
+
+NSLog(@"E1 %@", NSStringFromRect(res.extent));
     // overlay onto a constant color (black) to show alpha
     CIFilter *f = [CIFilter filterWithName:@"CIConstantColorGenerator"];
     [f setValue:[CIColor colorWithRed:0.0 green:0.0 blue:0.0 alpha:1.0] forKey:@"inputColor"];
     CIImage *black = [f valueForKey:@"outputImage"];
+
+black = [black imageByClampingToRect:res.extent];
+NSLog(@"E2 %@", NSStringFromRect(res.extent));
     if (res == nil)
         return black;
-    f = [CIFilter filterWithName:@"CISourceOverCompositing"];
-    [f setValue:black forKey:@"inputBackgroundImage"];
-    [f setValue:res forKey:@"inputImage"];
-    res = [f valueForKey:@"outputImage"];
+//    f = [CIFilter filterWithName:@"CISourceOverCompositing"];
+//    [f setValue:black forKey:@"inputBackgroundImage"];
+//    [f setValue:res forKey:@"inputImage"];
+//    res = [f valueForKey:@"outputImage"];
+//    res = [res imageByCompositingOverImage:black];
+NSLog(@"E3 %@", NSStringFromRect(res.extent));
+
+//    res = [res imageByClampingToExtent];
+NSLog(@"E4 %@", NSStringFromRect(res.extent));
     if (viewTransformScale != 1.0 || viewTransformOffsetX != 0.0 || viewTransformOffsetY != 0.0)
     {
         // if the view transform is not unity, apply an affine transform to view the result
@@ -450,6 +469,14 @@
         [f setValue:t forKey:@"inputTransform"];
         [f setValue:res forKey:@"inputImage"];
         res = [f valueForKey:@"outputImage"];
+        NSLog(@"E5 WTF %@", NSStringFromRect(res.extent));
+    }
+    if (res.extent.size.width > (2.0 * [self bounds].size.width)) {
+        if (res.extent.size.width > (2.0 * origExtent.size.width)) {
+            res = [res imageByClampingToRect:[self bounds]];
+        } else {
+            res = [res imageByClampingToRect:origExtent];
+        }
     }
     return res;
 }
@@ -476,14 +503,23 @@
     // compute the core image graph for the view (based on the effect stack)
     im = [self coreImageResult];
     // display origin handles when the mouse is inside the view, and when a modal vwindow isn't present...
-    if (displayingPoints && [NSApp modalWindow] == nil)
+    if (displayingPoints && [NSApp modalWindow] == nil) {
         im = [self drawPoints:im inCIContext:context];
+    }
     // if successful, draw the image
     if (im != nil && context != nil)
     {
 	if (!printingContext)
 	{
-        [context drawImage:im inRect:cgr fromRect:cgr];
+NSLog(@"IM EXTENT %@", NSStringFromRect(im.extent));
+NSLog(@"IM DEF EXTENT %@", NSStringFromRect(im.definition.extent));
+NSLog(@"CI DRAWRECT %@", NSStringFromRect(r));
+//cgr = CGRectMake(0, 0, 1200, 900);
+        CGRect fromRect = im.extent;
+        CGRect inRect = CGRectMake((cgr.size.width - fromRect.size.width)/2, (cgr.size.height - fromRect.size.height)/2, fromRect.size.width, fromRect.size.height);
+
+        NSLog(@"from: %@ to %@ bounds %@", NSStringFromRect(fromRect), NSStringFromRect(inRect), NSStringFromRect([self bounds]));
+        [context drawImage:im inRect:inRect fromRect:fromRect];
 	}
 	else
 	{
