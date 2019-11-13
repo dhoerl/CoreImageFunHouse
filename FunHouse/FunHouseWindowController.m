@@ -47,7 +47,9 @@
 
 #import "FunHouseWindowController.h"
 #import "CoreImageView.h"
-#import "EffectStackController.h"
+
+//#import "EffectStackController.h"
+#import "Core_Image_Fun_House-Swift.h"
 #import "FunHouseDocument.h"
 #import "EffectStack.h"
 #import <ApplicationServices/ApplicationServices.h>

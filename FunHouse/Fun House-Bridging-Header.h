@@ -4,7 +4,6 @@
 
 @import AppKit;
 
-#import "EffectStackController.h"
 #import "FunHouseWindowController.h"
 #import "FunHouseDocument.h"
 #import "FunHouseApplication.h"

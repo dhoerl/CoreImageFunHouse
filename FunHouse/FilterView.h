@@ -47,13 +47,15 @@
 
 #import <AppKit/AppKit.h>
 #import <QuartzCore/QuartzCore.h>
+
 #import "EffectStackController.h"
 
+
 @class CoreImageView;
+@class EffectStackController;
 
 // type of widget last added
-typedef enum
-{
+typedef NS_ENUM(NSInteger, ControlType) {
     ctNone = 0,
     ctSlider,
     ctColorWell,
@@ -63,7 +65,18 @@ typedef enum
     ctVector,
     ctTextView,
     ctOffset,
-} ControlType;
+};
+
+@interface EffectStackBox : NSBox   // subclassed
+{
+    CIFilter *filter;
+    EffectStackController *master;
+}
+
+- (void)drawRect:(NSRect)r;
+- (void)setFilter:(CIFilter *)f;
+- (void)setMaster:(EffectStackController *)m;
+@end
 
 @interface FilterView : EffectStackBox
 {

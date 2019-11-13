@@ -38,7 +38,8 @@
 		AF90B80E18FC96640066FC6D /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = AF90B80418FC96640066FC6D /* InfoPlist.strings */; };
 		AF90B80F18FC96640066FC6D /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = AF90B80618FC96640066FC6D /* MainMenu.xib */; };
 		AF90B81018FC96640066FC6D /* Preferences.xib in Resources */ = {isa = PBXBuildFile; fileRef = AF90B80818FC96640066FC6D /* Preferences.xib */; };
-		DED8298D23787E6E00BB203F /* EffectStackController.m in Sources */ = {isa = PBXBuildFile; fileRef = 6807985B0767B3BE00873D85 /* EffectStackController.m */; };
+		DED8299A2378CEBF00BB203F /* EffectStackController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DED8298A23787C3600BB203F /* EffectStackController.swift */; };
+		DED8299B2378FC9600BB203F /* EffectStackController.m in Sources */ = {isa = PBXBuildFile; fileRef = 6807985B0767B3BE00873D85 /* EffectStackController.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -83,15 +84,15 @@
 		68FCAB140770E25F0004DA32 /* Images */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Images; sourceTree = "<group>"; };
 		8D15AC360486D014006FF6A4 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		8D15AC370486D014006FF6A4 /* Core Image Fun House.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Core Image Fun House.app"; sourceTree = BUILT_PRODUCTS_DIR; };
-		AF90B7FD18FC96640066FC6D /* English */ = {isa = PBXFileReference; lastKnownFileType = text.rtf; name = English; path = English.lproj/Credits.rtf; sourceTree = "<group>"; };
-		AF90B7FF18FC96640066FC6D /* English */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = English; path = English.lproj/EffectStack.xib; sourceTree = "<group>"; };
-		AF90B80118FC96640066FC6D /* English */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = English; path = English.lproj/FilterPalette.xib; sourceTree = "<group>"; };
-		AF90B80318FC96640066FC6D /* English */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = English; path = English.lproj/FunHouseWindow.xib; sourceTree = "<group>"; };
-		AF90B80518FC96640066FC6D /* English */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; name = English; path = English.lproj/InfoPlist.strings; sourceTree = "<group>"; };
-		AF90B80718FC96640066FC6D /* English */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = English; path = English.lproj/MainMenu.xib; sourceTree = "<group>"; };
-		AF90B80918FC96640066FC6D /* English */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = English; path = English.lproj/Preferences.xib; sourceTree = "<group>"; };
 		DED8298923787C3600BB203F /* Fun House-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Fun House-Bridging-Header.h"; sourceTree = "<group>"; };
 		DED8298A23787C3600BB203F /* EffectStackController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = EffectStackController.swift; sourceTree = "<group>"; };
+		DED8298E2378801F00BB203F /* en */ = {isa = PBXFileReference; lastKnownFileType = text.rtf; name = en; path = en.lproj/Credits.rtf; sourceTree = "<group>"; };
+		DED829922378801F00BB203F /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		DED829952378802600BB203F /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/EffectStack.xib; sourceTree = "<group>"; };
+		DED829962378802600BB203F /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/FilterPalette.xib; sourceTree = "<group>"; };
+		DED829972378802600BB203F /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/FunHouseWindow.xib; sourceTree = "<group>"; };
+		DED829982378802600BB203F /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/MainMenu.xib; sourceTree = "<group>"; };
+		DED829992378802600BB203F /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/Preferences.xib; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -256,7 +257,7 @@
 		2A37F4A9FDCFA73011CA2CEA /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0940;
+				LastUpgradeCheck = 1120;
 				TargetAttributes = {
 					8D15AC270486D014006FF6A4 = {
 						LastSwiftMigration = 1120;
@@ -265,11 +266,11 @@
 			};
 			buildConfigurationList = 01E2153409ED8E0C00E66AF8 /* Build configuration list for PBXProject "FunHouse" */;
 			compatibilityVersion = "Xcode 3.2";
-			developmentRegion = English;
+			developmentRegion = en;
 			hasScannedForEncodings = 1;
 			knownRegions = (
 				en,
-				English,
+				Base,
 			);
 			mainGroup = 2A37F4AAFDCFA73011CA2CEA /* FunHouse */;
 			projectDirPath = "";
@@ -314,7 +315,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				8D15AC310486D014006FF6A4 /* FunHouseDocument.m in Sources */,
-				DED8298D23787E6E00BB203F /* EffectStackController.m in Sources */,
+				DED8299B2378FC9600BB203F /* EffectStackController.m in Sources */,
+				DED8299A2378CEBF00BB203F /* EffectStackController.swift in Sources */,
 				8D15AC320486D014006FF6A4 /* main.m in Sources */,
 				68D08A3A0766773F005C971D /* CoreImageView.m in Sources */,
 				6807919C0767823B00873D85 /* EffectStack.m in Sources */,
@@ -333,7 +335,7 @@
 		AF90B7FC18FC96640066FC6D /* Credits.rtf */ = {
 			isa = PBXVariantGroup;
 			children = (
-				AF90B7FD18FC96640066FC6D /* English */,
+				DED8298E2378801F00BB203F /* en */,
 			);
 			name = Credits.rtf;
 			sourceTree = "<group>";
@@ -341,7 +343,7 @@
 		AF90B7FE18FC96640066FC6D /* EffectStack.xib */ = {
 			isa = PBXVariantGroup;
 			children = (
-				AF90B7FF18FC96640066FC6D /* English */,
+				DED829952378802600BB203F /* Base */,
 			);
 			name = EffectStack.xib;
 			sourceTree = "<group>";
@@ -349,7 +351,7 @@
 		AF90B80018FC96640066FC6D /* FilterPalette.xib */ = {
 			isa = PBXVariantGroup;
 			children = (
-				AF90B80118FC96640066FC6D /* English */,
+				DED829962378802600BB203F /* Base */,
 			);
 			name = FilterPalette.xib;
 			sourceTree = "<group>";
@@ -357,7 +359,7 @@
 		AF90B80218FC96640066FC6D /* FunHouseWindow.xib */ = {
 			isa = PBXVariantGroup;
 			children = (
-				AF90B80318FC96640066FC6D /* English */,
+				DED829972378802600BB203F /* Base */,
 			);
 			name = FunHouseWindow.xib;
 			sourceTree = "<group>";
@@ -365,7 +367,7 @@
 		AF90B80418FC96640066FC6D /* InfoPlist.strings */ = {
 			isa = PBXVariantGroup;
 			children = (
-				AF90B80518FC96640066FC6D /* English */,
+				DED829922378801F00BB203F /* en */,
 			);
 			name = InfoPlist.strings;
 			sourceTree = "<group>";
@@ -373,7 +375,7 @@
 		AF90B80618FC96640066FC6D /* MainMenu.xib */ = {
 			isa = PBXVariantGroup;
 			children = (
-				AF90B80718FC96640066FC6D /* English */,
+				DED829982378802600BB203F /* Base */,
 			);
 			name = MainMenu.xib;
 			sourceTree = "<group>";
@@ -381,7 +383,7 @@
 		AF90B80818FC96640066FC6D /* Preferences.xib */ = {
 			isa = PBXVariantGroup;
 			children = (
-				AF90B80918FC96640066FC6D /* English */,
+				DED829992378802600BB203F /* Base */,
 			);
 			name = Preferences.xib;
 			sourceTree = "<group>";
@@ -394,11 +396,11 @@
 			buildSettings = {
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_WEAK = YES;
+				CODE_SIGN_IDENTITY = "-";
 				COMBINE_HIDPI_IMAGES = YES;
 				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = 1;
 				GCC_DYNAMIC_NO_PIC = NO;
-				GCC_ENABLE_FIX_AND_CONTINUE = YES;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
@@ -417,7 +419,6 @@
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				MARKETING_VERSION = 3.0;
-				PREBINDING = NO;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.example.apple-samplecode.${PRODUCT_NAME:rfc1034identifier}";
 				PRODUCT_NAME = "Core Image Fun House";
 				SDKROOT = macosx;
@@ -433,10 +434,10 @@
 			buildSettings = {
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_WEAK = YES;
+				CODE_SIGN_IDENTITY = "-";
 				COMBINE_HIDPI_IMAGES = YES;
 				COPY_PHASE_STRIP = YES;
 				CURRENT_PROJECT_VERSION = 1;
-				GCC_ENABLE_FIX_AND_CONTINUE = NO;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
 				GCC_OPTIMIZATION_LEVEL = s;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
@@ -455,7 +456,6 @@
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				MARKETING_VERSION = 3.0;
-				PREBINDING = NO;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.example.apple-samplecode.${PRODUCT_NAME:rfc1034identifier}";
 				PRODUCT_NAME = "Core Image Fun House";
 				SDKROOT = macosx;

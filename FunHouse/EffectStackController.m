@@ -60,7 +60,7 @@
 @class FilterView;
 @class CIFilter;
 
-
+#if 0
 @implementation EffectStackController
 {
     IBOutlet NSButton *topPlusButton;           // the plus button at the top of the effect stack inspector (outside of any layer box)
@@ -494,8 +494,7 @@
     if ([[d valueForKey:@"type"] isEqualToString:@"filter"])
         [self insertFilter:[d valueForKey:@"filter"] atIndex:[NSNumber numberWithInteger:0]];
     else if ([[d valueForKey:@"type"] isEqualToString:@"image"]) {
-        [self insertImage:[d valueForKey:@"image"] withFilename:[d valueForKey:@"filename"]
-          andImageFilePath:[d valueForKey:@"imageFilePath"] atIndex:[NSNumber numberWithInteger:0]];
+        [self insertImage:[d valueForKey:@"image"] withFilename:[d valueForKey:@"filename"] andImageFilePath:[d valueForKey:@"imageFilePath"] atIndex:[NSNumber numberWithInteger:0]];
     }
     else if ([[d valueForKey:@"type"] isEqualToString:@"text"])
         [self insertString:[d valueForKey:@"string"] withImage:[d valueForKey:@"image"] atIndex:[NSNumber numberWithInteger:0]];
@@ -1486,64 +1485,66 @@ static NSInteger stringCompare(id o1, id o2, void *context)
 }
 
 @end
+#endif
 
-@implementation EffectStackBox
 
-// this is a subclass of NSBox required so we can draw the interior of the box as red when there's something
-// in the box (namely an image well) that still needs filling
-
-#define boxInset 3.0
-#define boxFillet 7.0
-// control point distance from rectangle corner
-#define cpdelta (boxFillet * 0.35)
-
-- (void)setFilter:(CIFilter *)f
-{
-    filter = f;
-}
-
-- (void)setMaster:(EffectStackController *)m
-{
-    master = m;
-}
-
-- (void)drawRect:(NSRect)r
-{
-    NSBezierPath *path;
-    NSPoint bl, br, tr, tl;
-    NSRect R;
-    
-    [super drawRect:r];
-    if ([master effectStackFilterHasMissingImage:filter])
-    {
-        // overlay the box now - colorized
-        [[NSColor colorWithDeviceRed:1.0 green:0.0 blue:0.0 alpha:0.15] set];
-        path = [NSBezierPath bezierPath];
-        R = NSOffsetRect(NSInsetRect([self bounds], boxInset, boxInset), 0, 1);
-        bl = R.origin;
-        br = NSMakePoint(R.origin.x + R.size.width, R.origin.y);
-        tr = NSMakePoint(R.origin.x + R.size.width, R.origin.y + R.size.height);
-        tl = NSMakePoint(R.origin.x, R.origin.y + R.size.height);
-        [path moveToPoint:NSMakePoint(bl.x + boxFillet, bl.y)];
-        [path lineToPoint:NSMakePoint(br.x - boxFillet, br.y)];
-        [path curveToPoint:NSMakePoint(br.x, br.y + boxFillet)
-          controlPoint1:NSMakePoint(br.x - cpdelta, br.y)
-          controlPoint2:NSMakePoint(br.x, br.y + cpdelta)];
-        [path lineToPoint:NSMakePoint(tr.x, tr.y - boxFillet)];
-        [path curveToPoint:NSMakePoint(tr.x - boxFillet, tr.y)
-          controlPoint1:NSMakePoint(tr.x, tr.y - cpdelta)
-          controlPoint2:NSMakePoint(tr.x - cpdelta, tr.y)];
-        [path lineToPoint:NSMakePoint(tl.x + boxFillet, tl.y)];
-        [path curveToPoint:NSMakePoint(tl.x, tl.y - boxFillet)
-          controlPoint1:NSMakePoint(tl.x + cpdelta, tl.y)
-          controlPoint2:NSMakePoint(tl.x, tl.y - cpdelta)];
-        [path lineToPoint:NSMakePoint(bl.x, bl.y + boxFillet)];
-        [path curveToPoint:NSMakePoint(bl.x + boxFillet, bl.y)
-          controlPoint1:NSMakePoint(bl.x, bl.y + cpdelta)
-          controlPoint2:NSMakePoint(bl.x + cpdelta, bl.y)];
-        [path closePath];
-        [path fill];
-    }
-}
-
-@end
+//@implementation EffectStackBox
+//
+//// this is a subclass of NSBox required so we can draw the interior of the box as red when there's something
+//// in the box (namely an image well) that still needs filling
+//
+//#define boxInset 3.0
+//#define boxFillet 7.0
+//// control point distance from rectangle corner
+//#define cpdelta (boxFillet * 0.35)
+//
+//- (void)setFilter:(CIFilter *)f
+//{
+//    filter = f;
+//}
+//
+//- (void)setMaster:(EffectStackController *)m
+//{
+//    master = m;
+//}
+//
+//- (void)drawRect:(NSRect)r
+//{
+//    NSBezierPath *path;
+//    NSPoint bl, br, tr, tl;
+//    NSRect R;
+//    
+//    [super drawRect:r];
+//    if ([master effectStackFilterHasMissingImage:filter])
+//    {
+//        // overlay the box now - colorized
+//        [[NSColor colorWithDeviceRed:1.0 green:0.0 blue:0.0 alpha:0.15] set];
+//        path = [NSBezierPath bezierPath];
+//        R = NSOffsetRect(NSInsetRect([self bounds], boxInset, boxInset), 0, 1);
+//        bl = R.origin;
+//        br = NSMakePoint(R.origin.x + R.size.width, R.origin.y);
+//        tr = NSMakePoint(R.origin.x + R.size.width, R.origin.y + R.size.height);
+//        tl = NSMakePoint(R.origin.x, R.origin.y + R.size.height);
+//        [path moveToPoint:NSMakePoint(bl.x + boxFillet, bl.y)];
+//        [path lineToPoint:NSMakePoint(br.x - boxFillet, br.y)];
+//        [path curveToPoint:NSMakePoint(br.x, br.y + boxFillet)
+//          controlPoint1:NSMakePoint(br.x - cpdelta, br.y)
+//          controlPoint2:NSMakePoint(br.x, br.y + cpdelta)];
+//        [path lineToPoint:NSMakePoint(tr.x, tr.y - boxFillet)];
+//        [path curveToPoint:NSMakePoint(tr.x - boxFillet, tr.y)
+//          controlPoint1:NSMakePoint(tr.x, tr.y - cpdelta)
+//          controlPoint2:NSMakePoint(tr.x - cpdelta, tr.y)];
+//        [path lineToPoint:NSMakePoint(tl.x + boxFillet, tl.y)];
+//        [path curveToPoint:NSMakePoint(tl.x, tl.y - boxFillet)
+//          controlPoint1:NSMakePoint(tl.x + cpdelta, tl.y)
+//          controlPoint2:NSMakePoint(tl.x, tl.y - cpdelta)];
+//        [path lineToPoint:NSMakePoint(bl.x, bl.y + boxFillet)];
+//        [path curveToPoint:NSMakePoint(bl.x + boxFillet, bl.y)
+//          controlPoint1:NSMakePoint(bl.x, bl.y + cpdelta)
+//          controlPoint2:NSMakePoint(bl.x + cpdelta, bl.y)];
+//        [path closePath];
+//        [path fill];
+//    }
+//}
+//
+//@end

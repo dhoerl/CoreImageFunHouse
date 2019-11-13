@@ -53,6 +53,9 @@
 @class FilterView;
 @class CIFilter;
 
+#define FOOP 0
+
+#if FOOP
 @interface EffectStackController : NSWindowController
 
 + (instancetype)sharedEffectStackController;
@@ -92,14 +95,4 @@
 
 @end
 
-@interface EffectStackBox : NSBox   // subclassed
-{
-    CIFilter *filter;
-    EffectStackController *master;
-}
-
-- (void)drawRect:(NSRect)r;
-- (void)setFilter:(CIFilter *)f;
-- (void)setMaster:(EffectStackController *)m;
-@end
-
+#endif

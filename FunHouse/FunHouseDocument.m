@@ -50,7 +50,9 @@
 #import "FunHouseWindowController.h"
 #import "ParameterView.h"
 #import "CoreImageView.h"
-#import "EffectStackController.h"
+
+//#import "EffectStackController.h"
+#import "Core_Image_Fun_House-Swift.h"
 #import <ApplicationServices/ApplicationServices.h>
 #import <Carbon/Carbon.h>
 #import "FunHouseApplication.h"

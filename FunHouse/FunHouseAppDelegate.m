@@ -46,7 +46,9 @@
  */
 
 #import "FunHouseAppDelegate.h"
-#import "EffectStackController.h"
+
+//#import "EffectStackController.h"
+#import "Core_Image_Fun_House-Swift.h"
 
 @implementation FunHouseAppDelegate
 

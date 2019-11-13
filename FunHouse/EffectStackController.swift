@@ -18,7 +18,7 @@ private let inspectorTopY = 36
     @IBOutlet var resetButton: NSButton! // the reset button at the top of the effect stack inspector (outside of any layer box)
     @IBOutlet var playButton: NSButton! // the play button at the top of the effect stack inspector (outside of any layer box)
     // filter palette stuff
-    @IBOutlet var filterPalette: NSWindow! // the filter palette (called image units)
+    @IBOutlet var filterPalette: NSPanel! // the filter palette (called image units)
     @IBOutlet var filterOKButton: NSButton! // the apply button, actually
     @IBOutlet var filterCancelButton: NSButton! // the cancel button
     @IBOutlet var categoryTableView: NSTableView! // the category table view
@@ -29,11 +29,10 @@ private let inspectorTopY = 36
     private var inspectingEffectStack: EffectStack? // pointer to the effect stack that is currently associated with the effect stack inspector
     private var needsUpdate = false // set this to re-layout the effect stack inspector on update
     private var boxes: [FilterView] = [] // an array of FilterView (subclass of NSBox) that make up the effect stack inspector's UI
-    private var filterPaletteTopLevelObjects: [NSObject] = [] // an array of the top level objects in the filter palette nib
     private var currentCategory = 0 // the currently selected row in the category table view
     private var currentFilterRow = 0 // the currently selected row in the filter table view
     private var categories: [String: Any] = [:] // a dictionary containing all filter category names and the filters that populate the category
-    private var filterClassname: String? // returned filter's classname from the modal filter palette (when a filter has been selected)
+    private var filterClassname = "" // returned filter's classname from the modal filter palette (when a filter has been selected)
     private var timer: Timer? /// playing all transitions
 
     // globals used in the sequential animation of all transitions
@@ -41,14 +40,35 @@ private let inspectorTopY = 36
     private var transitionDuration = 0.0
     private var transitionEndTime = 0.0
 
-    static var _sharedEffectStackController: EffectStackController?
-    private let nsApp = NSApplication.shared as! FunHouseApplication
+    private var filterNameToIndex: [String: Int] = [:]
+    private var filterIndexToName: [Int: String] = [:]
 
-    class func sharedEffectStackController() -> EffectStackController {
-        if _sharedEffectStackController == nil {
-            _sharedEffectStackController = EffectStackController()
+    private let nsApp = NSApplication.shared as! FunHouseApplication
+    static let sharedEffectStackController = EffectStackController()
+
+    // since the effect stack inspector window is global to all documents, we here provide a way of accessing the shared window
+    // load from nib (really only the stuff at the top of the inspector)
+
+    override var windowNibName: String! {
+        return "EffectStack"
+    }
+
+    init() {
+        super.init(window: nil)
+        windowFrameAutosaveName = "EffectStack"
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    // free up the stuff we allocate
+    deinit {
+        if filterPalette != nil {
+        filterPalette.close()
+
         }
-        return _sharedEffectStackController!
+        NotificationCenter.default.removeObserver(self)
     }
 
     func setAutomaticDefaults(_ f: CIFilter, at index: Int) {
@@ -102,28 +122,16 @@ private let inspectorTopY = 36
     func collectFilterImageOrText() -> [String: Any]? {
         // when running the filter palette, if a filter is chosen (as opposed to an image or text) then filterClassname returns the
         // class name of the chosen filter
-
-        filterClassname = nil
+        filterClassname = ""
 
         if filterPalette == nil {
             // load the nib for the filter palette
-            var topLevelObjects: NSArray?
-            Bundle.main.loadNibNamed("FilterPalette", owner: self, topLevelObjects: &topLevelObjects)
-            // keep the top level objects in the filterPaletteTopLevelObjects array
-            //guard let topLevelObjs = topLevelObjects as? [NSObject] else { fatalError() }
-
-            if let topLevelObjects = topLevelObjects as? [NSObject] {
-                for object in topLevelObjects {
-                    if !filterPaletteTopLevelObjects.contains(object) {
-                        filterPaletteTopLevelObjects.append(object)
-                    }
-                }
-            }
+            Bundle.main.loadNibNamed("FilterPalette", owner: self, topLevelObjects: nil)
         }
 
         // set up the categories data structure, that enumerates all filters for use by the filter palette
         if categories.isEmpty {
-            _loadFilterListIntoInspector()
+            loadFilterListIntoInspector()
         } else {
             filterTableView.reloadData()
         }
@@ -134,27 +142,27 @@ private let inspectorTopY = 36
         // re-establish the current position in the filters palette
         categoryTableView.selectRowIndexes(NSIndexSet(index: currentCategory) as IndexSet, byExtendingSelection: false)
         filterTableView.selectRowIndexes(NSIndexSet(index: currentFilterRow) as IndexSet, byExtendingSelection: false)
+
         // run the modal filter palette now
+#if true
         let i = NSApp.runModal(for: filterPalette).rawValue
         filterPalette.close()
 
         switch i {
         case 100: // Apply
             // create the filter layer dictionary
-            if let filterClassname = filterClassname, let filter1 = CIFilter(name: filterClassname) {
+            if !filterClassname.isEmpty, let filter1 = CIFilter(name: filterClassname) {
                 return [ "type" : "filter", "filter" : filter1 ]
             }
             fatalError()
         case 101: // Cancel
             return nil
-        case 102: // Image
-            // use the open panel to open an image
+        case 102: // Image: use the open panel to open an image
             let op = NSOpenPanel()
             op.allowsMultipleSelection = false
             op.canChooseDirectories = false
             op.resolvesAliases = true
             op.canChooseFiles = true
-            // run the open panel with the allowed types
             op.allowedFileTypes = ["jpg", "jpeg", "tif", "tiff", "png", "crw", "cr2", "raf", "mrw", "nef", "srf", "exr"]
             switch op.runModal() {
             case NSApplication.ModalResponse.OK:
@@ -172,7 +180,7 @@ private let inspectorTopY = 36
                 }
                 return nil
             case NSApplication.ModalResponse.cancel:
-            fallthrough
+                fallthrough
             default:
                 return nil
             }
@@ -181,6 +189,52 @@ private let inspectorTopY = 36
         default:
             return nil
         }
+
+#else
+        window!.beginSheet(filterPalette, completionHandler: { (resp: NSApplication.ModalResponse) in
+            switch resp.rawValue {
+            case 100: // Apply
+                // create the filter layer dictionary
+                if !self.filterClassname.isEmpty, let filter1 = CIFilter(name: filterClassname) {
+                    return [ "type" : "filter", "filter" : filter1 ]
+                }
+                fatalError()
+            case 101: // Cancel
+                return nil
+            case 102: // Image: use the open panel to open an image
+                let op = NSOpenPanel()
+                op.allowsMultipleSelection = false
+                op.canChooseDirectories = false
+                op.resolvesAliases = true
+                op.canChooseFiles = true
+                op.allowedFileTypes = ["jpg", "jpeg", "tif", "tiff", "png", "crw", "cr2", "raf", "mrw", "nef", "srf", "exr"]
+                switch op.runModal() {
+                case NSApplication.ModalResponse.OK:
+                    // get image from open panel
+                    let url = op.urls[0]
+                    let im = CIImage(contentsOf: url)
+                    // create the image layer dictionary
+                    if let im = im {
+                        return [
+                        "type" : "image",
+                        "image" : im,
+                        "filename" : url.lastPathComponent,
+                        "imageFilePath" : url.path
+                        ]
+                    }
+                    return nil
+                case NSApplication.ModalResponse.cancel:
+                    fallthrough
+                default:
+                    return nil
+                }
+            case 103: // Text
+                return [ "type" : "text", "string" : "text", "scale" : 10.0 ]
+            default:
+                return nil
+            }
+        })
+#endif
     }
 
     // get the currently associated document
@@ -205,46 +259,47 @@ private let inspectorTopY = 36
         window?.update()
     }
 
-    func _loadFilterListIntoInspector() {
+    private func loadFilterListIntoInspector() {
         // here's a list of all categories
-        let attrs = [
-            kCICategoryGeometryAdjustment, kCICategoryDistortionEffect, kCICategoryBlur, kCICategorySharpen, kCICategoryColorAdjustment,
-            kCICategoryColorEffect, kCICategoryStylize, kCICategoryHalftoneEffect, kCICategoryTileEffect, kCICategoryGenerator,
-            kCICategoryGradient, kCICategoryTransition, kCICategoryCompositeOperation
-//            kCICategoryDistortionEffect,
-//            kCICategoryGeometryAdjustment,
-//            kCICategoryCompositeOperation,
-//            kCICategoryHalftoneEffect,
-//            kCICategoryColorAdjustment,
-//            kCICategoryColorEffect,
-//            kCICategoryTransition,
-//            kCICategoryTileEffect,
-//            kCICategoryGenerator,
-//            kCICategoryReduction,
-//            kCICategoryGradient,
-//            kCICategoryStylize,
-//            kCICategorySharpen,
-//            kCICategoryBlur,
-//            kCICategoryVideo,
-//            kCICategoryStillImage,
-//            kCICategoryInterlaced,
-//            kCICategoryNonSquarePixels,
-//            kCICategoryHighDynamicRange,
-//            kCICategoryBuiltIn,
-//            kCICategoryFilterGenerator
+        let cats = [
+            kCICategoryDistortionEffect,
+            kCICategoryGeometryAdjustment,
+            kCICategoryCompositeOperation,
+            kCICategoryHalftoneEffect,
+            kCICategoryColorAdjustment,
+            kCICategoryColorEffect,
+            kCICategoryTransition,
+            kCICategoryTileEffect,
+            kCICategoryGenerator,
+            kCICategoryReduction,
+            kCICategoryGradient,
+            kCICategoryStylize,
+            kCICategorySharpen,
+            kCICategoryBlur,
+            kCICategoryVideo,
+            kCICategoryStillImage,
+            kCICategoryInterlaced,
+            kCICategoryNonSquarePixels,
+            kCICategoryHighDynamicRange,
+            kCICategoryBuiltIn,
+            kCICategoryFilterGenerator
         ]
         // call to load all plug-in image units
         CIPlugIn.loadNonExecutablePlugIns() // loadAllPlugIns()
         // enumerate all filters in the chosen categories
-        for cat in attrs {
+        for (idx, cat) in cats.sorted(by: <).enumerated() {
             // make a list of all filters in this category
             let all = CIFilter.filterNames(inCategory: cat)
             // make this category's list of approved filters
             let name = CIFilter.localizedName(forCategory: cat)
             let dict = buildFilterDictionary(all)
-print("NAME:", name)
-print("DICT:", dict ?? "WTF")
-print("---")
+//print("NAME:", name)
+//print("DICT:", dict ?? "WTF")
+//print("---")
+
+            filterNameToIndex[name] = idx
+            filterIndexToName[idx] = name
+
             categories[name] = dict
         }
         currentCategory = 0
@@ -1000,20 +1055,6 @@ print("---")
         fatalError()
     }
 
-    // since the effect stack inspector window is global to all documents, we here provide a way of accessing the shared window
-    // load from nib (really only the stuff at the top of the inspector)
-    convenience init() {
-        self.init(windowNibName: "EffectStack")
-        windowFrameAutosaveName = "EffectStack"
-        // set up an array to hold the representations of the layers from the effect stack we inspect
-        needsUpdate = true
-    }
-
-    // free up the stuff we allocate
-    deinit {
-        NotificationCenter.default.removeObserver(self)
-    }
-
     // this allows us to set up the right pointers when changing documents
     // in particular the core image view and the effect stack
     func setMainWindow(_ mainWindow: NSWindow?) {
@@ -1127,6 +1168,7 @@ print("---")
     // handle the filter palette image button
     // return the category name for the category index - used by filter palette category table view
     func categoryName(for i: Int) -> String {
+#if false
         var s: String?
 
         switch i {
@@ -1160,10 +1202,14 @@ print("---")
             s = ""
         }
         return s ?? ""
+#else
+        return filterIndexToName[i]!
+#endif
     }
 
     // return the category index for the category name - used by filter palette category table view
     func index(forCategory nm: String) -> Int {
+#if false
         if (nm == CIFilter.localizedName(forCategory: kCICategoryGeometryAdjustment)) {
             return 0
         }
@@ -1204,6 +1250,9 @@ print("---")
             return 12
         }
         return -1
+#else
+        return filterNameToIndex[nm]!
+#endif
     }
 
 
@@ -1212,9 +1261,8 @@ print("---")
         guard let tv = filterTableView else { fatalError() }
         // get current category item
         // decide current filter name from selected row (or none selected) in the filter name list
-        let row = tv.selectedRow
-        if row == -1 {
-            filterClassname = nil
+        guard case let row = tv.selectedRow, row != -1 else {
+            filterClassname = ""
             filterOKButton.isEnabled = false
             return
         }
@@ -1272,7 +1320,7 @@ extension EffectStackController: NSTableViewDataSource {
         switch tv.tag {
         case 0:
             // category table view
-            count = 13
+            count = filterNameToIndex.count
         case 1:
             fallthrough
         default:

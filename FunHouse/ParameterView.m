@@ -49,7 +49,9 @@
 #import "ParameterView.h"
 #import "CoreImageView.h"
 #import "FilterView.h"
-#import "EffectStackController.h"
+
+//#import "EffectStackController.h"
+#import "Core_Image_Fun_House-Swift.h"
 
 
 @implementation ParameterView
