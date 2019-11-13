@@ -29,10 +29,10 @@ private let inspectorTopY = 36
     private var inspectingEffectStack: EffectStack? // pointer to the effect stack that is currently associated with the effect stack inspector
     private var needsUpdate = false // set this to re-layout the effect stack inspector on update
     private var boxes: [FilterView] = [] // an array of FilterView (subclass of NSBox) that make up the effect stack inspector's UI
-    private var filterPaletteTopLevelObjects: [NSView] = [] // an array of the top level objects in the filter palette nib
+    private var filterPaletteTopLevelObjects: [NSObject] = [] // an array of the top level objects in the filter palette nib
     private var currentCategory = 0 // the currently selected row in the category table view
     private var currentFilterRow = 0 // the currently selected row in the filter table view
-    private var categories: [AnyHashable : Any]? // a dictionary containing all filter category names and the filters that populate the category
+    private var categories: [String: Any] = [:] // a dictionary containing all filter category names and the filters that populate the category
     private var filterClassname: String? // returned filter's classname from the modal filter palette (when a filter has been selected)
     private var timer: Timer? /// playing all transitions
 
@@ -68,7 +68,7 @@ private let inspectorTopY = 36
             f.setValue(nsApp.defaultAlphaEMap(), forKey: "inputShadingImage")
             inspectingEffectStack.setFilterLayer(index, imageFilePathValue: nsApp.defaultAlphaEMapPath(), forKey: "inputShadingImage")
             // the angle chosen shows off the alpha material map's shine on the leading curl
-            f.setValue(NSNumber(value: -.pi * 0.25), forKey: "inputAngle")
+            f.setValue(-.pi * 0.25, forKey: "inputAngle")
         case "CIShadedMaterial":
             // shaded material gets an opaque material map that shows off surfaces well
             f.setValue(nsApp.defaultShadingEMap(), forKey: "inputShadingImage")
@@ -105,21 +105,24 @@ private let inspectorTopY = 36
 
         filterClassname = nil
 
-        // load the nib for the filter palette
-        var topLevelObjects: NSArray?
-        Bundle.main.loadNibNamed("FilterPalette", owner: self, topLevelObjects: &topLevelObjects)
-        // keep the top level objects in the filterPaletteTopLevelObjects array
-        guard let topLevelObjs = topLevelObjects as? [NSView] else { fatalError() }
+        if filterPalette == nil {
+            // load the nib for the filter palette
+            var topLevelObjects: NSArray?
+            Bundle.main.loadNibNamed("FilterPalette", owner: self, topLevelObjects: &topLevelObjects)
+            // keep the top level objects in the filterPaletteTopLevelObjects array
+            //guard let topLevelObjs = topLevelObjects as? [NSObject] else { fatalError() }
 
-        for object in topLevelObjs {
-            if !filterPaletteTopLevelObjects.contains(object) {
-                filterPaletteTopLevelObjects.append(object)
+            if let topLevelObjects = topLevelObjects as? [NSObject] {
+                for object in topLevelObjects {
+                    if !filterPaletteTopLevelObjects.contains(object) {
+                        filterPaletteTopLevelObjects.append(object)
+                    }
+                }
             }
         }
 
         // set up the categories data structure, that enumerates all filters for use by the filter palette
-        if categories == nil {
-            categories = [:]
+        if categories.isEmpty {
             _loadFilterListIntoInspector()
         } else {
             filterTableView.reloadData()
@@ -134,21 +137,17 @@ private let inspectorTopY = 36
         // run the modal filter palette now
         let i = NSApp.runModal(for: filterPalette).rawValue
         filterPalette.close()
-        if i == 100 {
-            // Apply
+
+        switch i {
+        case 100: // Apply
             // create the filter layer dictionary
             if let filterClassname = filterClassname, let filter1 = CIFilter(name: filterClassname) {
-                return [
-                "type" : "filter",
-                "filter" : filter1
-                ]
+                return [ "type" : "filter", "filter" : filter1 ]
             }
             fatalError()
-        } else if i == 101 {
-            // Cancel
+        case 101: // Cancel
             return nil
-        } else if i == 102 {
-            // Image
+        case 102: // Image
             // use the open panel to open an image
             let op = NSOpenPanel()
             op.allowsMultipleSelection = false
@@ -157,8 +156,8 @@ private let inspectorTopY = 36
             op.canChooseFiles = true
             // run the open panel with the allowed types
             op.allowedFileTypes = ["jpg", "jpeg", "tif", "tiff", "png", "crw", "cr2", "raf", "mrw", "nef", "srf", "exr"]
-            let j = op.runModal()
-            if j == NSApplication.ModalResponse.OK {
+            switch op.runModal() {
+            case NSApplication.ModalResponse.OK:
                 // get image from open panel
                 let url = op.urls[0]
                 let im = CIImage(contentsOf: url)
@@ -172,19 +171,16 @@ private let inspectorTopY = 36
                     ]
                 }
                 return nil
-            } else if j == NSApplication.ModalResponse.cancel {
+            case NSApplication.ModalResponse.cancel:
+            fallthrough
+            default:
                 return nil
             }
-        } else if i == 103 {
-            // Text
-            // create the text layer dictionary
-            return [
-            "type" : "text",
-            "string" : "text",
-            "scale" : NSNumber(value: 10.0)
-            ]
+        case 103: // Text
+            return [ "type" : "text", "string" : "text", "scale" : 10.0 ]
+        default:
+            return nil
         }
-        return nil
     }
 
     // get the currently associated document
@@ -210,24 +206,46 @@ private let inspectorTopY = 36
     }
 
     func _loadFilterListIntoInspector() {
-        var cat: String?
-        var attrs: [AnyHashable]?
-        var all: [AnyHashable]?
-        var m: Int
-
         // here's a list of all categories
-        attrs = [kCICategoryGeometryAdjustment, kCICategoryDistortionEffect, kCICategoryBlur, kCICategorySharpen, kCICategoryColorAdjustment, kCICategoryColorEffect, kCICategoryStylize, kCICategoryHalftoneEffect, kCICategoryTileEffect, kCICategoryGenerator, kCICategoryGradient, kCICategoryTransition, kCICategoryCompositeOperation]
+        let attrs = [
+            kCICategoryGeometryAdjustment, kCICategoryDistortionEffect, kCICategoryBlur, kCICategorySharpen, kCICategoryColorAdjustment,
+            kCICategoryColorEffect, kCICategoryStylize, kCICategoryHalftoneEffect, kCICategoryTileEffect, kCICategoryGenerator,
+            kCICategoryGradient, kCICategoryTransition, kCICategoryCompositeOperation
+//            kCICategoryDistortionEffect,
+//            kCICategoryGeometryAdjustment,
+//            kCICategoryCompositeOperation,
+//            kCICategoryHalftoneEffect,
+//            kCICategoryColorAdjustment,
+//            kCICategoryColorEffect,
+//            kCICategoryTransition,
+//            kCICategoryTileEffect,
+//            kCICategoryGenerator,
+//            kCICategoryReduction,
+//            kCICategoryGradient,
+//            kCICategoryStylize,
+//            kCICategorySharpen,
+//            kCICategoryBlur,
+//            kCICategoryVideo,
+//            kCICategoryStillImage,
+//            kCICategoryInterlaced,
+//            kCICategoryNonSquarePixels,
+//            kCICategoryHighDynamicRange,
+//            kCICategoryBuiltIn,
+//            kCICategoryFilterGenerator
+        ]
         // call to load all plug-in image units
         CIPlugIn.loadNonExecutablePlugIns() // loadAllPlugIns()
         // enumerate all filters in the chosen categories
-        m = attrs?.count ?? 0
-        for i in 0..<m {
-            // get this category
-            cat = attrs?[i] as? String
+        for cat in attrs {
             // make a list of all filters in this category
-            all = CIFilter.filterNames(inCategory: cat)
+            let all = CIFilter.filterNames(inCategory: cat)
             // make this category's list of approved filters
-            categories?[CIFilter.localizedName(forCategory: cat ?? "")] = buildFilterDictionary(all)
+            let name = CIFilter.localizedName(forCategory: cat)
+            let dict = buildFilterDictionary(all)
+print("NAME:", name)
+print("DICT:", dict ?? "WTF")
+print("---")
+            categories[name] = dict
         }
         currentCategory = 0
         currentFilterRow = 0
@@ -236,59 +254,37 @@ private let inspectorTopY = 36
     }
 
     // build a dictionary of approved filters in a given category for the filter inspector
-    func buildFilterDictionary(_ names: [AnyHashable]?) -> [AnyHashable : Any]? {
-        var inspectable: Bool
-        var attr: [AnyHashable : Any]?
-        var parameter: [AnyHashable : Any]?
-        var inputKeys: [AnyHashable]?
-        var td: [AnyHashable : Any]?
-        var catfilters: [AnyHashable : Any]?
-        var classname: String?
-        var classstring: String?
-        var typestring: String?
-        var filter: CIFilter?
-
-        catfilters = [:]
-        for i in 0..<(names?.count ?? 0) {
-            // load the filter class name
-            classname = names?[i] as? String
+    func buildFilterDictionary(_ names: [String]) -> [String: Any]? {
+        var catfilters: [String: Any] = [:]
+        for classname in names {
             // create an instance of the filter
-            filter = CIFilter(name: classname ?? "")
-            if filter != nil {
-                // search the filter for any input parameters we can't inspect
-                inspectable = true
-                attr = filter?.attributes
-                inputKeys = filter?.inputKeys
-                // enumerate all input parameters and generate their UI
-                //enumerator = (inputKeys as NSArray?)?.objectEnumerator()
-                guard let inputKeys = inputKeys as? [String] else { continue }
-
-                for key in inputKeys  {
-                    parameter = attr?[key] as? [AnyHashable : Any]
-                    classstring = parameter?[kCIAttributeClass] as? String
-                    if (classstring == "CIImage") || (classstring == "CIColor") || (classstring == "NSAffineTransform") || (classstring == "NSNumber") {
-                        continue // all inspectable
-                    } else if (classstring == "CIVector") {
-                        // check for a vector with no attributes
-                        typestring = parameter?[kCIAttributeType] as? String
-                        if typestring != nil && !(typestring == kCIAttributeTypePosition) && !(typestring == kCIAttributeTypeRectangle) && !(typestring == kCIAttributeTypePosition3) && !(typestring == kCIAttributeTypeOffset) {
-                            inspectable = false
-                        }
-                    } else {
+            guard let filter = CIFilter(name: classname) else { fatalError() }
+            // search the filter for any input parameters we can't inspect
+            var inspectable = true
+            // enumerate all input parameters and generate their UI
+            for key in filter.inputKeys  {
+                let parameter = filter.attributes[key] as? [String : Any]
+                let classstring = parameter?[kCIAttributeClass] as? String
+                if (classstring == "CIImage") || (classstring == "CIColor") || (classstring == "NSAffineTransform") || (classstring == "NSNumber") {
+                    continue // all inspectable
+                } else if (classstring == "CIVector") {
+                    // check for a vector with no attributes
+                    let typestring = parameter?[kCIAttributeType] as? String
+                    if typestring != nil && !(typestring == kCIAttributeTypePosition) && !(typestring == kCIAttributeTypeRectangle) && !(typestring == kCIAttributeTypePosition3) && !(typestring == kCIAttributeTypeOffset) {
                         inspectable = false
                     }
+                } else {
+                    inspectable = false
                 }
-                if !inspectable {
-                    continue // if we can't inspect it, it's not approved and must be omitted from the list
-                }
-                // create a dictionary for the filter with filter's class name
-                td = [:]
-                td?[kCIAttributeClass] = classname
-                // set it as the value for a key which is the filter's localized name
-                catfilters?[CIFilter.localizedName(forFilterName: classname ?? "")] = td
-            } else {
-                print(" could not create '\(classname ?? "")' filter")
             }
+            if !inspectable {
+                continue // if we can't inspect it, it's not approved and must be omitted from the list
+            }
+            // create a dictionary for the filter with filter's class name
+            let td: [String: Any] = [kCIAttributeClass: classname]
+            // set it as the value for a key which is the filter's localized name
+            guard let name = CIFilter.localizedName(forFilterName: classname) else { fatalError() }
+            catfilters[name] = td
         }
         return catfilters
     }
@@ -466,7 +462,7 @@ private let inspectorTopY = 36
     }
 
     @IBAction func plusButtonAction(_ sender: NSControl) {
-        guard let d = collectFilterImageOrText(), let type = d["type"] as? String else { fatalError() }
+        guard let d = collectFilterImageOrText(), let type = d["type"] as? String else { return print("Guess cancel was hit")  }
         let index = sender.tag + 1
 
         switch type {
@@ -1211,62 +1207,9 @@ private let inspectorTopY = 36
     }
 
 
-    // build the filter list (enumerates all filters)
-    // table view data source methods
-    func numberOfRows(in tv: NSTableView) -> Int {
-        var count: Int
-
-        switch tv.tag {
-        case 0:
-            // category table view
-            count = 13
-        case 1:
-            fallthrough
-        default:
-            // filter table view
-            let s = categoryName(for: currentCategory)
-            // use category name to get dictionary of filter names
-            guard let categories = categories, let dict = categories[s] as? [String: Any] else { fatalError() }
-            // create an array
-            let filterNames = dict.keys
-            // return number of filters in this category
-            count = filterNames.count
-        }
-        return count
-    }
-
-    func tableView(_ tv: NSTableView, objectValueFor tc: NSTableColumn, row: Int) -> String {
-        var s: String
-
-        switch tv.tag {
-        case 0:
-            // category table view
-            s = categoryName(for: row)
-            guard let tfc = tc.dataCell as? NSTextFieldCell else { fatalError() }
-            // handle names that are too long by ellipsizing the name
-            s = ParameterView.ellipsizeField(tc.width, font: tfc.font, string: s)
-        case 1:
-            fallthrough
-        default:
-            // filter table view
-            // we need to maintain the filter names in a sorted order.
-            s = categoryName(for: currentCategory)
-            // use label (category name) to get dictionary of filter names
-            guard let categories = categories, let dict = categories[s] as? [String: Any] else { fatalError() }
-            // create an array of the sorted names (this is inefficient since we don't cache the sorted array)
-            let filterNames = dict.keys.sorted(by: <)
-            // return filter name
-            s = filterNames[row]
-            guard let tfc = tc.dataCell as? NSTextFieldCell else { fatalError() }
-            // handle names that are too long by ellipsizing the name
-            s = ParameterView.ellipsizeField(tc.width, font: tfc.font, string: s)
-        }
-        return s
-    }
-
     // this is called when we select a filter from the list
     func addEffect() {
-        guard let tv = filterTableView, let categories = categories else { fatalError() }
+        guard let tv = filterTableView else { fatalError() }
         // get current category item
         // decide current filter name from selected row (or none selected) in the filter name list
         let row = tv.selectedRow
@@ -1319,6 +1262,63 @@ private let inspectorTopY = 36
     // glue code to set up an image layer
 }
 
+extension EffectStackController: NSTableViewDataSource {
+
+    // build the filter list (enumerates all filters)
+    // table view data source methods
+    @objc func numberOfRows(in tv: NSTableView) -> Int {
+        var count: Int
+
+        switch tv.tag {
+        case 0:
+            // category table view
+            count = 13
+        case 1:
+            fallthrough
+        default:
+            // filter table view
+            let s = categoryName(for: currentCategory)
+            // use category name to get dictionary of filter names
+            guard let dict = categories[s] as? [String: Any] else { fatalError() }
+            // create an array
+            let filterNames = dict.keys
+            // return number of filters in this category
+            count = filterNames.count
+        }
+        return count
+    }
+
+    @objc func tableView(_ tv: NSTableView, objectValueFor tc: NSTableColumn?, row: Int) -> Any? {
+        guard let tc = tc else { fatalError() }
+        var s: String
+
+        switch tv.tag {
+        case 0:
+            // category table view
+            s = categoryName(for: row)
+            guard let tfc = tc.dataCell as? NSTextFieldCell else { fatalError() }
+            // handle names that are too long by ellipsizing the name
+            s = ParameterView.ellipsizeField(tc.width, font: tfc.font, string: s)
+        case 1:
+            fallthrough
+        default:
+            // filter table view
+            // we need to maintain the filter names in a sorted order.
+            s = categoryName(for: currentCategory)
+            // use label (category name) to get dictionary of filter names
+            guard let dict = categories[s] as? [String: Any] else { fatalError() }
+            // create an array of the sorted names (this is inefficient since we don't cache the sorted array)
+            let filterNames = dict.keys.sorted(by: <)
+            // return filter name
+            s = filterNames[row]
+            guard let tfc = tc.dataCell as? NSTextFieldCell else { fatalError() }
+            // handle names that are too long by ellipsizing the name
+            s = ParameterView.ellipsizeField(tc.width, font: tfc.font, string: s)
+        }
+        return s
+    }
+
+}
 
 #if false
 @objcMembers class EffectStackBox: NSBox /* subclassed */ {
