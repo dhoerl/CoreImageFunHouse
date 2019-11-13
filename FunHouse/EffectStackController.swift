@@ -4,8 +4,6 @@
  Abstract: This class controls the automatically resizeable effect stack inspector. It must also be able to resize and reconfigure itself when switching documents.
   Version: 2.1
 
-
-
  Copyright (C) 2014 Apple Inc. All Rights Reserved.
 
  */
@@ -101,7 +99,7 @@ private let inspectorTopY = 36
     }
 
     // this method brings up the "image units palette" (we call it the filter palette) - and it also has buttons for images and text layers
-    func collectFilterImageOrText() -> [AnyHashable : Any]? {
+    func collectFilterImageOrText() -> [String: Any]? {
         // when running the filter palette, if a filter is chosen (as opposed to an image or text) then filterClassname returns the
         // class name of the chosen filter
 
@@ -139,13 +137,13 @@ private let inspectorTopY = 36
         if i == 100 {
             // Apply
             // create the filter layer dictionary
-            if let filter1 = CIFilter(name: filterClassname ?? "") {
+            if let filterClassname = filterClassname, let filter1 = CIFilter(name: filterClassname) {
                 return [
                 "type" : "filter",
                 "filter" : filter1
                 ]
             }
-            return nil
+            fatalError()
         } else if i == 101 {
             // Cancel
             return nil
@@ -220,7 +218,7 @@ private let inspectorTopY = 36
         // here's a list of all categories
         attrs = [kCICategoryGeometryAdjustment, kCICategoryDistortionEffect, kCICategoryBlur, kCICategorySharpen, kCICategoryColorAdjustment, kCICategoryColorEffect, kCICategoryStylize, kCICategoryHalftoneEffect, kCICategoryTileEffect, kCICategoryGenerator, kCICategoryGradient, kCICategoryTransition, kCICategoryCompositeOperation]
         // call to load all plug-in image units
-        CIPlugIn.loadAllPlugIns()
+        CIPlugIn.loadNonExecutablePlugIns() // loadAllPlugIns()
         // enumerate all filters in the chosen categories
         m = attrs?.count ?? 0
         for i in 0..<m {
@@ -298,19 +296,22 @@ private let inspectorTopY = 36
     // set changes (dirty the document)
     // call to directly update (and re-layout) the configuration of the effect stack inspector
     // this is the glue code you call to insert a filter layer into the effect stack. this handles save for undo, etc.
-    func insert(_ f: CIFilter?, atIndex index: NSNumber?) {
+    func insert(_ f: CIFilter, atIndex index: NSNumber) {
         guard let inspectingEffectStack = inspectingEffectStack  else { fatalError() }
 
         // actually insert the filter layer into the effect stack
-        inspectingEffectStack.insertFilterLayer(f, at: index?.intValue ?? 0)
+        inspectingEffectStack.insertFilterLayer(f, at: index.intValue)
         // set filter attributes to their defaults
-        (inspectingEffectStack.filter(at: index?.intValue ?? 0)).setDefaults()
+        inspectingEffectStack.filter(at: index.intValue).setDefaults()
         // set any automatic defaults we need (generally the odd image parameter)
-        setAutomaticDefaults(inspectingEffectStack.filter(at: index?.intValue ?? 0), at: index?.intValue ?? 0)
-// TODO
+        setAutomaticDefaults(inspectingEffectStack.filter(at: index.intValue), at: index.intValue)
+
+        if let doc = doc(), let udMgr = doc.undoManager, let target = udMgr.prepare(withInvocationTarget: self) as? EffectStackController {
         // do "save for undo"
-//        doc.undoManager?.prepare(withInvocationTarget: self).removeFilterImageOrText(atIndex: index)
-//        doc.undoManager?.setActionName("Filter \(CIFilter.localizedName(forFilterName: NSStringFromClass(type(of: f).self)) ?? "")")
+            target.removeFilterImageOrText(atIndex: index)
+            let name = CIFilter.localizedName(forFilterName: String(describing: type(of: f)))!
+            udMgr.setActionName("Filter \(name)")
+        }
         // dirty the documdent
         setChanges()
         // redo the effect stack inspector's layout after the change
@@ -320,15 +321,18 @@ private let inspectorTopY = 36
     }
 
     // this is the high-level glue code you call to insert an image layer into the effect stack. this handles save for undo, etc.
-    func insert(_ image: CIImage?, withFilename filename: String?, andImageFilePath path: String?, atIndex index: NSNumber?) {
+    func insert(_ image: CIImage, withFilename filename: String, andImageFilePath path: String, atIndex index: NSNumber) {
         guard let inspectingEffectStack = inspectingEffectStack else { fatalError() }
 
         // actually insert the image layer into the effect stack
-        inspectingEffectStack.insertImageLayer(image, withFilename: filename, at: index?.intValue ?? 0)
-        inspectingEffectStack.setImageLayer(index?.intValue ?? 0, imageFilePath: path)
+        inspectingEffectStack.insertImageLayer(image, withFilename: filename, at: index.intValue)
+        inspectingEffectStack.setImageLayer(index.intValue, imageFilePath: path)
         // do "save for undo"
-//        doc.undoManager?.prepare(withInvocationTarget: self).removeFilterImageOrText(atIndex: index)
-//        doc.undoManager?.setActionName("Image \(filename?.lastPathComponent ?? "")")
+        if let doc = doc(), let udMgr = doc.undoManager, let target = udMgr.prepare(withInvocationTarget: self) as? EffectStackController {
+            target.removeFilterImageOrText(atIndex: index)
+            let url = URL(fileURLWithPath: filename)
+            udMgr.setActionName("Image \(url.lastPathComponent)")
+        }
         // dirty the documdent
         setChanges()
         // redo the effect stack inspector's layout after the change
@@ -338,14 +342,16 @@ private let inspectorTopY = 36
     }
 
     // this is the high-level glue code you call to insert a text layer into the effect stack. this handles save for undo, etc.
-    func insert(_ string: String?, with image: CIImage?, atIndex index: NSNumber?) {
+    func insert(_ string: String, with image: CIImage, atIndex index: NSNumber) {
         guard let inspectingEffectStack = inspectingEffectStack else { fatalError() }
 
         // actually insert the text layer into the effect stack
-        inspectingEffectStack.insertTextLayer(string, with: image, at: index?.intValue ?? 0)
+        inspectingEffectStack.insertTextLayer(string, with: image, at: index.intValue)
         // do "save for undo"
-//        doc.undoManager().prepare(withInvocationTarget: self).removeFilterImageOrText(atIndex: index)
-//        doc.undoManager().setActionName("Text")
+        if let doc = doc(), let udMgr = doc.undoManager, let target = udMgr.prepare(withInvocationTarget: self) as? EffectStackController {
+            target.removeFilterImageOrText(atIndex: index)
+            udMgr.setActionName("Text")
+        }
         // dirty the documdent
         setChanges()
         // redo the effect stack inspector's layout after the change
@@ -354,7 +360,7 @@ private let inspectorTopY = 36
         inspectingCoreImageView?.needsDisplay = true
     }
 
-    func setLayer(_ index: Int, image im: CIImage?, andFilename filename: String?) {
+    func setLayer(_ index: Int, image im: CIImage, andFilename filename: String) {
         guard let inspectingEffectStack = inspectingEffectStack else { fatalError() }
 
         inspectingEffectStack.setImageLayer(index, image: im, andFilename: filename)
@@ -387,45 +393,50 @@ private let inspectorTopY = 36
         playButton.isEnabled = enabled
     }
 
-    func removeFilterImageOrText(atIndex index: NSNumber?) {
+    func removeFilterImageOrText(atIndex index: NSNumber) {
         guard let inspectingEffectStack = inspectingEffectStack else { fatalError() }
 
-        var typ: String? = nil
-        var filter: CIFilter? = nil
-        var image: CIImage? = nil
-        var filename: String? = nil
-        var string: String? = nil
-        var path: String? = nil
+        var typ: String!
+        var filter: CIFilter!
+        var image: CIImage!
+        var filename: String!
+        var string: String!
+        var path: String!
 
         // first get handles to parameters we want to retain for "save for undo"
-        typ = inspectingEffectStack.type(at: index?.intValue ?? 0)
-        if (typ == "filter") {
-            filter = inspectingEffectStack.filter(at: index?.intValue ?? 0)
-        } else if (typ == "image") {
-            image = inspectingEffectStack.image(at: index?.intValue ?? 0)
-            filename = inspectingEffectStack.filename(at: index?.intValue ?? 0)
-            path = inspectingEffectStack.imageFilePath(at: index?.intValue ?? 0)
-        } else if (typ == "text") {
-            image = inspectingEffectStack.image(at: index?.intValue ?? 0)
-            string = inspectingEffectStack.string(at: index?.intValue ?? 0)
+        typ = inspectingEffectStack.type(at: index.intValue)
+        switch typ {
+        case "filter":
+            filter = inspectingEffectStack.filter(at: index.intValue)
+        case "image":
+            image = inspectingEffectStack.image(at: index.intValue)
+            filename = inspectingEffectStack.filename(at: index.intValue)
+            path = inspectingEffectStack.imageFilePath(at: index.intValue)
+        case "text":
+            image = inspectingEffectStack.image(at: index.intValue)
+            string = inspectingEffectStack.string(at: index.intValue)
+        default:
+            fatalError()
         }
         // actually remove the layer from the effect stack here
-        inspectingEffectStack.removeLayer(at: index?.intValue ?? 0)
+        inspectingEffectStack.removeLayer(at: index.intValue)
 
-// TODO
         // do "save for undo"
         if let doc = doc(), let udMgr = doc.undoManager, let target = udMgr.prepare(withInvocationTarget: self) as? EffectStackController {
-            if (typ == "filter") {
+            switch typ {
+            case "filter":
                 guard let filter = filter, let name = CIFilter.localizedName(forFilterName: String(describing: type(of: filter))) else { fatalError() }
                 udMgr.setActionName("Filter \(name)")
-            } else if (typ == "image") {
+            case "image":
                 guard let filename = filename else { fatalError() }
                 target.insert(image, withFilename: filename, andImageFilePath: path, atIndex: index)
                 let url = URL(fileURLWithPath: filename)
                 udMgr.setActionName("Image \(url.lastPathComponent)")
-            } else if (typ == "string") {
+            case "text":    // ObjC says "string" ???
                 target.insert(string, with: image, atIndex: index)
                 udMgr.setActionName("Text")
+            default:
+                fatalError()
             }
         }
         // dirty the documdent
@@ -689,7 +700,7 @@ private let inspectorTopY = 36
         contentView.needsDisplay = true
     }
 
-    func newUI(for f: CIFilter, index: Int) -> FilterView? {
+    func newUI(for f: CIFilter, index: Int) -> FilterView {
         guard let inspectingEffectStack = inspectingEffectStack else { fatalError() }
 
         var hasBackground: Bool
@@ -842,7 +853,7 @@ private let inspectorTopY = 36
         return fv
     }
 
-    func newUI(for im: CIImage, filename: String, index: Int) -> FilterView? {
+    func newUI(for im: CIImage, filename: String, index: Int) -> FilterView {
         guard let inspectingEffectStack = inspectingEffectStack, let window = window, let view = window.contentView else { fatalError() }
 
         // create the box first
@@ -872,7 +883,7 @@ private let inspectorTopY = 36
     }
 
 
-    func newUI(forText string: String?, index: Int) -> FilterView? {
+    func newUI(forText string: String?, index: Int) -> FilterView {
         guard let inspectingEffectStack = inspectingEffectStack, let view = window?.contentView else { fatalError() }
         var frame: NSRect
 
@@ -951,11 +962,11 @@ private let inspectorTopY = 36
     } // called when dragging into or choosing base image to reconfigure the document's window
 
     // for retaining full file names of images
-    func registerImageLayer(_ index: Int, imageFilePath path: String?) {
+    func registerImageLayer(_ index: Int, imageFilePath path: String) {
         inspectingEffectStack?.setImageLayer(index, imageFilePath: path)
     }
 
-    func registerFilterLayer(_ filter: CIFilter, key: String, imageFilePath path: String?) {
+    func registerFilterLayer(_ filter: CIFilter, key: String, imageFilePath path: String) {
         guard let inspectingEffectStack = inspectingEffectStack else { fatalError() }
 
         let count = inspectingEffectStack.layerCount()
@@ -972,11 +983,12 @@ private let inspectorTopY = 36
         }
     }
 
-    func imageFilePath(forImageLayer index: Int) -> String? {
-        return inspectingEffectStack?.imageFilePath(at: index)
+    func imageFilePath(forImageLayer index: Int) -> String {
+        guard let inspectingEffectStack = inspectingEffectStack else { fatalError() }
+        return inspectingEffectStack.imageFilePath(at: index)
     }
 
-    func imageFilePath(forFilterLayer filter: CIFilter?, key: String?) -> String? {
+    func imageFilePath(forFilterLayer filter: CIFilter, key: String) -> String {
         guard let inspectingEffectStack = inspectingEffectStack else { fatalError() }
 
         let count = inspectingEffectStack.layerCount()
@@ -989,7 +1001,7 @@ private let inspectorTopY = 36
                 return inspectingEffectStack.filterLayer(i, imageFilePathValueForKey: key)
             }
         }
-        return nil
+        fatalError()
     }
 
     // since the effect stack inspector window is global to all documents, we here provide a way of accessing the shared window
@@ -1042,12 +1054,12 @@ private let inspectorTopY = 36
     }
 
     // when window changes, update the pointers
-    @objc func mainWindowChanged(_ notification: Notification?) {
-        setMainWindow(notification?.object as? NSWindow)
+    @objc func mainWindowChanged(_ notification: Notification) {
+        setMainWindow(notification.object as? NSWindow)
     }
 
     // dissociate us when the window is gone.
-    @objc func mainWindowResigned(_ notification: Notification?) {
+    @objc func mainWindowResigned(_ notification: Notification) {
         setMainWindow(nil)
     }
 
@@ -1068,21 +1080,21 @@ private let inspectorTopY = 36
                 let count = inspectingEffectStack.layerCount()
                 for i in 0..<count {
                     let type = inspectingEffectStack.type(at: i)
-                    if (type == "filter") {
+                    switch type {
+                    case "filter":
                         guard let filter = inspectingEffectStack.filter(at: i) else { fatalError() }
-                        if let autorelease = newUI(for: filter, index: i) {
-                            self.boxes.append(autorelease)
-                        }
-                    } else if (type == "image") {
+                        let autorelease = newUI(for: filter, index: i)
+                        boxes.append(autorelease)
+                    case "image":
                         guard let image = inspectingEffectStack.image(at: i) else { fatalError() }
-                        if let autorelease = newUI(for: image, filename: inspectingEffectStack.filename(at: i), index: i) {
-                            self.boxes.append(autorelease)
-                        }
-                    } else if (type == "text") {
+                        let autorelease = newUI(for: image, filename: inspectingEffectStack.filename(at: i), index: i)
+                        boxes.append(autorelease)
+                    case "text":
                         guard let string = inspectingEffectStack.string(at: i) else { fatalError() }
-                        if let autorelease = newUI(forText: string, index: i) {
-                            self.boxes.append(autorelease)
-                        }
+                        let autorelease = newUI(forText: string, index: i)
+                        boxes.append(autorelease)
+                    default:
+                        fatalError()
                     }
                 }
             }
@@ -1100,9 +1112,6 @@ private let inspectorTopY = 36
         setChanges()
         inspectingCoreImageView.needsDisplay = true
     }
-
-
-
 
     // handle the play button - play all transitions
     // this must be in synch with EffectStack.nib
@@ -1349,11 +1358,11 @@ private let inspectorTopY = 36
         }
     }
 
-    func setFilter(_ f: CIFilter?) {
+    func setFilter(_ f: CIFilter) {
         filter = f
     }
 
-    func setMaster(_ m: EffectStackController?) {
+    func setMaster(_ m: EffectStackController) {
         master = m
     }
 
