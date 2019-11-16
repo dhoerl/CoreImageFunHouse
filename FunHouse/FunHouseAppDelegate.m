@@ -129,7 +129,7 @@
         if ([op runModal] == NSOKButton) {
             //[[NSDocumentController sharedDocumentController] openDocumentWithContentsOfURL:[[op URLs] objectAtIndex:0] display:YES error:&err];
             [[NSDocumentController sharedDocumentController] openDocumentWithContentsOfURL:[[op URLs] objectAtIndex:0] display:YES completionHandler:^(NSDocument * _Nullable document, BOOL documentWasAlreadyOpen, NSError * _Nullable error) {
-                    if (error) { NSLog(@"ERROR: %@", error); }
+                if (error) { NSLog(@"ERROR: %@", error); }
                 }
             ];
         }

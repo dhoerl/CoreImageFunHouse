@@ -64,10 +64,7 @@ private let inspectorTopY = 36
 
     // free up the stuff we allocate
     deinit {
-        if filterPalette != nil {
-        filterPalette.close()
-
-        }
+        filterPalette?.close()
         NotificationCenter.default.removeObserver(self)
     }
 
@@ -120,13 +117,11 @@ private let inspectorTopY = 36
     }
 
     // this method brings up the "image units palette" (we call it the filter palette) - and it also has buttons for images and text layers
-    func collectFilterImageOrText() -> [String: Any]? {
+     func collectFilterImageOrText(completion: @escaping ([String: Any]?) -> Void) {
         // when running the filter palette, if a filter is chosen (as opposed to an image or text) then filterClassname returns the
         // class name of the chosen filter
         filterClassname = ""
-
         if filterPalette == nil {
-            // load the nib for the filter palette
             Bundle.main.loadNibNamed("FilterPalette", owner: self, topLevelObjects: nil)
         }
 
@@ -144,64 +139,19 @@ private let inspectorTopY = 36
         categoryTableView.selectRowIndexes(NSIndexSet(index: currentCategory) as IndexSet, byExtendingSelection: false)
         filterTableView.selectRowIndexes(NSIndexSet(index: currentFilterRow) as IndexSet, byExtendingSelection: false)
 
-        // run the modal filter palette now
-#if true
-        let i = NSApp.runModal(for: filterPalette).rawValue
-        filterPalette.close()
+        nsApp.mainWindow!.beginSheet(filterPalette, completionHandler: { (resp: NSApplication.ModalResponse) -> Void in
+            var dict: [String: Any]?
 
-        switch i {
-        case 100: // Apply
-            // create the filter layer dictionary
-            if !filterClassname.isEmpty, let filter1 = CIFilter(name: filterClassname) {
-                return [ "type" : "filter", "filter" : filter1 ]
-            }
-            fatalError()
-        case 101: // Cancel
-            return nil
-        case 102: // Image: use the open panel to open an image
-            let op = NSOpenPanel()
-            op.allowsMultipleSelection = false
-            op.canChooseDirectories = false
-            op.resolvesAliases = true
-            op.canChooseFiles = true
-            op.allowedFileTypes = ["jpg", "jpeg", "tif", "tiff", "png", "crw", "cr2", "raf", "mrw", "nef", "srf", "exr"]
-            switch op.runModal() {
-            case NSApplication.ModalResponse.OK:
-                // get image from open panel
-                let url = op.urls[0]
-                let im = CIImage(contentsOf: url)
-                // create the image layer dictionary
-                if let im = im {
-                    return [
-                    "type" : "image",
-                    "image" : im,
-                    "filename" : url.lastPathComponent,
-                    "imageFilePath" : url.path
-                    ]
-                }
-                return nil
-            case NSApplication.ModalResponse.cancel:
-                fallthrough
-            default:
-                return nil
-            }
-        case 103: // Text
-            return [ "type" : "text", "string" : "text", "scale" : 10.0 ]
-        default:
-            return nil
-        }
-
-#else
-        window!.beginSheet(filterPalette, completionHandler: { (resp: NSApplication.ModalResponse) in
             switch resp.rawValue {
             case 100: // Apply
                 // create the filter layer dictionary
-                if !self.filterClassname.isEmpty, let filter1 = CIFilter(name: filterClassname) {
-                    return [ "type" : "filter", "filter" : filter1 ]
+                if !self.filterClassname.isEmpty, let filter1 = CIFilter(name: self.filterClassname) {
+                    dict = [ "type" : "filter", "filter" : filter1 ]
+                } else {
+                    fatalError()
                 }
-                fatalError()
             case 101: // Cancel
-                return nil
+                break
             case 102: // Image: use the open panel to open an image
                 let op = NSOpenPanel()
                 op.allowsMultipleSelection = false
@@ -216,26 +166,24 @@ private let inspectorTopY = 36
                     let im = CIImage(contentsOf: url)
                     // create the image layer dictionary
                     if let im = im {
-                        return [
+                        dict = [
                         "type" : "image",
                         "image" : im,
                         "filename" : url.lastPathComponent,
                         "imageFilePath" : url.path
                         ]
                     }
-                    return nil
-                case NSApplication.ModalResponse.cancel:
-                    fallthrough
+                case NSApplication.ModalResponse.cancel: fallthrough
                 default:
-                    return nil
+                    break
                 }
             case 103: // Text
-                return [ "type" : "text", "string" : "text", "scale" : 10.0 ]
+                dict = [ "type" : "text", "string" : "text", "scale" : 10.0 ]
             default:
-                return nil
+                break
             }
+            completion(dict)
         })
-#endif
     }
 
     // get the currently associated document
@@ -297,7 +245,6 @@ private let inspectorTopY = 36
 //print("NAME:", name)
 //print("DICT:", dict ?? "WTF")
 //print("---")
-
             filterNameToIndex[name] = idx
             filterIndexToName[idx] = name
 
@@ -422,22 +369,16 @@ private let inspectorTopY = 36
     // reset the core image view (used when going to into full screen mode and back out)
     // flag that we need to reconfigure ourselves after some effect stack change
     func enablePlayButton() {
-        var enabled: Bool
-        var count: Int
-        var type: String?
-        var f: CIFilter?
-        var attr: [AnyHashable : Any]?
-
-        count = inspectingEffectStack?.layerCount() ?? 0
-        enabled = false
+        let count = inspectingEffectStack?.layerCount() ?? 0
+        var enabled = false
         for i in 0..<count {
-            type = inspectingEffectStack?.type(at: i)
+            let type = inspectingEffectStack?.type(at: i)
             if !(type == "filter") {
                 continue
             }
             // first find time slider
-            f = inspectingEffectStack?.filter(at: i)
-            attr = f?.attributes
+            let f = inspectingEffectStack?.filter(at: i)
+            let attr = f?.attributes
             if attr?["inputTime"] != nil {
                 enabled = true
                 break
@@ -449,7 +390,6 @@ private let inspectorTopY = 36
     func removeFilterImageOrText(atIndex index: Int) {
         guard let inspectingEffectStack = inspectingEffectStack else { fatalError() }
 
-        var typ: String!
         var filter: CIFilter!
         var image: CIImage!
         var filename: String!
@@ -457,7 +397,7 @@ private let inspectorTopY = 36
         var path: String!
 
         // first get handles to parameters we want to retain for "save for undo"
-        typ = inspectingEffectStack.type(at: index)
+        let typ = inspectingEffectStack.type(at: index)
         switch typ {
         case "filter":
             filter = inspectingEffectStack.filter(at: index)
@@ -501,41 +441,47 @@ private let inspectorTopY = 36
     }
 
     @IBAction func topPlusButtonAction(_ sender: NSControl) {
-        guard let d = collectFilterImageOrText(), let type = d["type"] as? String else { return }   // "Cancel" on the top most filter
+        let block: ([String: Any]?) -> Void = { (dict: [String: Any]?) in
+            guard let d = dict, let type = d["type"] as? String else { return }   // "Cancel" on the top most filter
 
-        switch type {
-        case "filter":
-            guard let filter = d["filter"] as? CIFilter else { fatalError() }
-            insert(filter, atIndex: 0)
-        case "image":
-            guard let image = d["image"]  as? CIImage, let string = d["filename"] as? String, let path = d["imageFilePath"] as? String else { fatalError() }
-            insert(image, withFilename: string, andImageFilePath: path, atIndex: 0)
-        case "text":
-            guard let string = d["string"] as? String, let image = d["image"] as? CIImage else { fatalError() }
-            insert(string, with: image, atIndex: 0)
-        default: fatalError()
+            switch type {
+            case "filter":
+                guard let filter = d["filter"] as? CIFilter else { fatalError() }
+                self.insert(filter, atIndex: 0)
+            case "image":
+                guard let image = d["image"]  as? CIImage, let string = d["filename"] as? String, let path = d["imageFilePath"] as? String else { fatalError() }
+                self.insert(image, withFilename: string, andImageFilePath: path, atIndex: 0)
+            case "text":
+                guard let string = d["string"] as? String, let image = d["image"] as? CIImage else { fatalError() }
+                self.insert(string, with: image, atIndex: 0)
+            default: fatalError()
+            }
+            self.enablePlayButton()
         }
-        enablePlayButton()
-    }
+        collectFilterImageOrText(completion: block)
+     }
 
-    @IBAction func plusButtonAction(_ sender: NSControl) {
-        guard let d = collectFilterImageOrText(), let type = d["type"] as? String else { return print("Guess cancel was hit")  }
-        let index = sender.tag + 1
+     @IBAction func plusButtonAction(_ sender: NSControl) {
+         let block: ([String: Any]?) -> Void = { (dict: [String: Any]?) in
+             guard let d = dict, let type = d["type"] as? String else { return }   // "Cancel" on the top most filter
+             let index = sender.tag + 1
 
-        switch type {
-        case "filter":
-            guard let filter = d["filter"] as? CIFilter else { fatalError() }
-            insert(filter, atIndex: index)
-        case "image":
-            guard let image = d["image"]  as? CIImage, let string = d["filename"] as? String, let path = d["imageFilePath"] as? String else { fatalError() }
-            insert(image, withFilename: string, andImageFilePath: path, atIndex: index)
-        case "text":
-            guard let string = d["string"] as? String, let image = d["image"] as? CIImage else { fatalError() }
-            insert(string, with: image, atIndex: index)
-        default: fatalError()
-        }
+             switch type {
+             case "filter":
+                 guard let filter = d["filter"] as? CIFilter else { fatalError() }
+                 self.insert(filter, atIndex: index)
+             case "image":
+                 guard let image = d["image"]  as? CIImage, let string = d["filename"] as? String, let path = d["imageFilePath"] as? String else { fatalError() }
+                 self.insert(image, withFilename: string, andImageFilePath: path, atIndex: index)
+             case "text":
+                 guard let string = d["string"] as? String, let image = d["image"] as? CIImage else { fatalError() }
+                 self.insert(string, with: image, atIndex: index)
+             default: fatalError()
+             }
 
-        enablePlayButton()
+             self.enablePlayButton()
+         }
+        collectFilterImageOrText(completion: block)
     }
 
     @IBAction func minusButtonAction(_ sender: NSControl) {
@@ -546,27 +492,12 @@ private let inspectorTopY = 36
     @IBAction func resetButtonAction(_ sender: NSControl) {
         guard let inspectingEffectStack = inspectingEffectStack else { fatalError() }
 
-        var i: Int
-        var count: Int
-
         // kill off all layers from the effect stack
-        count = inspectingEffectStack.layerCount()
-        if count == 0 {
-            return
-        }
+        guard case let count = inspectingEffectStack.layerCount(), count > 0 else { return }
+
         // note: done using glue primitives so it will be an undoable operation
-        if !(inspectingEffectStack.type(at: 0) == "image") {
-            i = count - 1
-            while i >= 0 {
-                removeFilterImageOrText(atIndex: i)
-                i -= 1
-            }
-        } else {
-            i = count - 1
-            while i > 0 {
-                removeFilterImageOrText(atIndex: i)
-                i -= 1
-            }
+        for i in (0..<count).reversed() {
+            removeFilterImageOrText(atIndex: i)
         }
         // dirty the document
         setChanges()
@@ -578,27 +509,20 @@ private let inspectorTopY = 36
     }
 
     func playButtonAction(_ sender: NSButton) {
-        var count: Int
-        var nTransitions: Int
-        var type: String?
-        var f: CIFilter?
-        var attr: [AnyHashable : Any]?
-        var d: [AnyHashable : Any]?
-
-        count = inspectingEffectStack?.layerCount() ?? 0
+        let count = inspectingEffectStack?.layerCount() ?? 0
         // first determine the number of transitions
-        nTransitions = 0
+        var nTransitions = 0
         for i in 0..<count {
-            type = inspectingEffectStack?.type(at: i)
+            let type = inspectingEffectStack?.type(at: i)
             // find only filter layers
             if !(type == "filter") {
                 continue
             }
             // first find time slider
-            f = inspectingEffectStack?.filter(at: i)
-            attr = f?.attributes
+            let f = inspectingEffectStack?.filter(at: i)
+            let attr = f?.attributes
             // basically anything with an "inputTime" is a transition by definition
-            d = attr?["inputTime"] as? [AnyHashable : Any]
+            let d = attr?["inputTime"] as? [AnyHashable : Any]
             if d == nil {
                 continue
             }
@@ -616,15 +540,15 @@ private let inspectorTopY = 36
         startTimer()
         // set all inputTime parameters to 0.0
         for i in 0..<count {
-            type = inspectingEffectStack?.type(at: i)
+            let type = inspectingEffectStack?.type(at: i)
             // find only filters
             if !(type == "filter") {
                 continue
             }
             // first find time slider
-            f = inspectingEffectStack?.filter(at: i)
-            attr = f?.attributes
-            d = attr?["inputTime"] as? [AnyHashable : Any]
+            let f = inspectingEffectStack?.filter(at: i)
+            let attr = f?.attributes
+            let d = attr?["inputTime"] as? [AnyHashable : Any]
             if d == nil {
                 continue
             }
@@ -649,6 +573,7 @@ private let inspectorTopY = 36
     // stop the transition timer
     func stopTimer() {
         guard let timer = timer else { return }
+
         timer.invalidate()
         self.timer = nil
     }
@@ -656,19 +581,11 @@ private let inspectorTopY = 36
     // called by the transition timer every 1/30 second
     // this animates the transitions in sequence - one after another
     @objc func autoTimer(_ sender: Timer) {
-        var count: Int
-        var transitionIndex: Int
-        var f: CIFilter?
-        var type: String?
-        var attr: [AnyHashable : Any]?
-        var now: Double
-        var transitionValue: CGFloat
-        var value: CGFloat
         var lastTimeValue: CGFloat = 0.0
+        let now = Date.timeIntervalSinceReferenceDate
 
-        now = Date.timeIntervalSinceReferenceDate
         // compute where the global time index within the state of the "n" transitions that are animating
-        transitionValue = CGFloat((now - transitionStartTime) / transitionDuration)
+        let transitionValue = CGFloat((now - transitionStartTime) / transitionDuration)
         if transitionValue < 0.0 {
             stopTimer()
             return
@@ -676,20 +593,20 @@ private let inspectorTopY = 36
         // set all times now
         if transitionValue >= 0.0 {
             // assign an index to each transition
-            transitionIndex = 0
-            count = inspectingEffectStack?.layerCount() ?? 0
+            var transitionIndex = 0
+            let count = inspectingEffectStack?.layerCount() ?? 0
             for i in 0..<count {
-                type = inspectingEffectStack?.type(at: i)
+                let type = inspectingEffectStack?.type(at: i)
                 if !(type == "filter") {
                     continue
                 }
                 // first find time slider
-                f = inspectingEffectStack?.filter(at: i)
-                attr = f?.attributes
+                let f = inspectingEffectStack?.filter(at: i)
+                let attr = f?.attributes
                 if attr?["inputTime"] != nil {
                     // for this transition decide where it is within its time sequence
                     // by subtracting the transition index from the global time index
-                    value = transitionValue - CGFloat(transitionIndex)
+                    var value = transitionValue - CGFloat(transitionIndex)
                     // clamp to the time sequence of the transition
                     if value <= 0.0 {
                         value = 0.0
@@ -712,21 +629,16 @@ private let inspectorTopY = 36
             updateLayout()
             // and turn off the timer
             stopTimer()
-            return
         }
     }
-
 
     func layoutInspector() {
         guard let window = window, let contentView = window.contentView else { fatalError() }
 
         // decide how inspector is to be sized and layed out
         // boxes are all internally sized properly at this point
-        var inspectorheight: Int
-        var fvtop: Int
-
         // first estimate the size of the effect stack inspector (with the boxes placed one after another vertically)
-        inspectorheight = inspectorTopY
+        var inspectorheight = inspectorTopY
         for fv in boxes{
             let height = fv.bounds.size.height
             // add the height of the box plus some spacing
@@ -740,7 +652,7 @@ private let inspectorTopY = 36
         window.setFrame(frm, display: true, animate: true) // animate the window size change
         // and move all the boxes into place
 
-        fvtop = inspectorheight - inspectorTopY
+        var fvtop = inspectorheight - inspectorTopY
         for fv in boxes {
             frm = fv.frame
             frm.origin.y = CGFloat(fvtop) - frm.size.height
@@ -754,17 +666,10 @@ private let inspectorTopY = 36
     }
 
     func newUI(for f: CIFilter, index: Int) -> FilterView {
-        guard let inspectingEffectStack = inspectingEffectStack else { fatalError() }
-
-        var hasBackground: Bool
-        var typestring: String?
-        var classstring: String?
-        var frame: NSRect
-        var view: NSView?
+        guard let inspectingEffectStack = inspectingEffectStack, let window = window, let view = window.contentView  else { fatalError() }
 
         // create box first
-        view = window?.contentView
-        frame = view?.bounds ?? NSRect.zero
+        var frame = view.bounds
         frame.size.width -= 12
         frame.origin.x += 6
         frame.size.height -= CGFloat(inspectorTopY)
@@ -772,7 +677,7 @@ private let inspectorTopY = 36
 
         fv.setFilter(f)
         fv.isHidden = true
-        window?.contentView?.addSubview(fv)
+        view.addSubview(fv)
 
         fv.titlePosition = NSBox.TitlePosition.noTitle
         fv.autoresizingMask = [.width, .minYMargin]
@@ -784,14 +689,14 @@ private let inspectorTopY = 36
         fv.tryFilterHeader(f)
         var attr = f.attributes
         // decide if this filter has a background image parameter (true for blend modes and Porter-Duff modes)
-        hasBackground = false
+        var hasBackground = false
         let inputKeys = f.inputKeys
 
         // enumerate all input parameters and generate their UI
         for key in inputKeys {
             let parameter = attr[key]
             if (parameter is [AnyHashable : Any]) {
-                classstring = (parameter as? [AnyHashable : Any])?[kCIAttributeClass] as? String
+                let classstring = (parameter as? [AnyHashable : Any])?[kCIAttributeClass] as? String
                 if (classstring == "CIImage") && (key == "inputBackgroundImage") {
                     hasBackground = true
                 }
@@ -801,9 +706,9 @@ private let inspectorTopY = 36
         for key in inputKeys {
             let parameter = attr[key]
             if (parameter is [AnyHashable : Any]) {
-                classstring = (parameter as? [AnyHashable : Any])?[kCIAttributeClass] as? String
+                let classstring = (parameter as? [AnyHashable : Any])?[kCIAttributeClass] as? String
                 if (classstring == "NSNumber") {
-                    typestring = (parameter as? [AnyHashable : Any])?[kCIAttributeType] as? String
+                    let typestring = (parameter as? [AnyHashable : Any])?[kCIAttributeType] as? String
                     if (typestring == kCIAttributeTypeBoolean) {
                         // if it's a boolean type, save space for a check box
                         fv.tryCheckBox(for: f, key: key, display: inspectingCoreImageView)
@@ -836,7 +741,7 @@ private let inspectorTopY = 36
                     fv.tryTransform(for: f, key: key, display: inspectingCoreImageView)
                 } else if (classstring == "CIVector") {
                     // check for a vector with no attributes
-                    typestring = (parameter as? [AnyHashable : Any])?[kCIAttributeType] as? String
+                    let typestring = (parameter as? [AnyHashable : Any])?[kCIAttributeType] as? String
                     if typestring == nil {
                         // save space for a 4-element vector inspection widget (4 text fields)
                         fv.tryVector(for: f, key: key, display: inspectingCoreImageView)
@@ -857,9 +762,9 @@ private let inspectorTopY = 36
         for key in inputKeys {
             let parameter = attr[key]
             if (parameter is [AnyHashable : Any]) {
-                classstring = (parameter as? [AnyHashable : Any])?[kCIAttributeClass] as? String
+                let classstring = (parameter as? [AnyHashable : Any])?[kCIAttributeClass] as? String
                 if (classstring == "NSNumber") {
-                    typestring = (parameter as? [AnyHashable : Any])?[kCIAttributeType] as? String
+                    let typestring = (parameter as? [AnyHashable : Any])?[kCIAttributeType] as? String
                     if (typestring == kCIAttributeTypeBoolean) {
                         // if it's a boolean type, generate a check box
                         fv.addCheckBox(for: f, key: key, display: inspectingCoreImageView)
@@ -891,7 +796,7 @@ private let inspectorTopY = 36
                     fv.addTransform(for: f, key: key, display: inspectingCoreImageView)
                 } else if (classstring == "CIVector") {
                     // check for a vector with no attributes
-                    typestring = (parameter as? [AnyHashable : Any])?[kCIAttributeType] as? String
+                    let typestring = (parameter as? [AnyHashable : Any])?[kCIAttributeType] as? String
                     if typestring == nil {
                         // generate a 4-element vector inspection widget (4 text fields)
                         fv.addVector(for: f, key: key, display: inspectingCoreImageView)
@@ -938,10 +843,9 @@ private let inspectorTopY = 36
 
     func newUI(forText string: String?, index: Int) -> FilterView {
         guard let inspectingEffectStack = inspectingEffectStack, let view = window?.contentView else { fatalError() }
-        var frame: NSRect
 
         // create the box first
-        frame = view.bounds
+        var frame = view.bounds
         frame.size.width -= 12
         frame.origin.x += 6
         frame.size.height -= CGFloat(inspectorTopY)
@@ -969,29 +873,28 @@ private let inspectorTopY = 36
         return fv
     }
 
-
     @IBAction func filterOKButtonAction(_ sender: Any) {
         // signal to apply filter
-        nsApp.stopModal(withCode: NSApplication.ModalResponse(rawValue: 100))
+        nsApp.mainWindow!.endSheet(filterPalette, returnCode: NSApplication.ModalResponse(rawValue: 100))
     }
 
     @IBAction func filterCancelButtonAction(_ sender: Any) {
         // signal cancel
-        nsApp.stopModal(withCode: NSApplication.ModalResponse(rawValue: 101))
+        nsApp.mainWindow!.endSheet(filterPalette, returnCode: NSApplication.ModalResponse(rawValue: 101))
     }
 
     @IBAction func filterImageButtonAction(_ sender: Any) {
         // signal to get an image
-        nsApp.stopModal(withCode: NSApplication.ModalResponse(rawValue: 102))
+        nsApp.mainWindow!.endSheet(filterPalette, returnCode: NSApplication.ModalResponse(rawValue: 102))
     }
 
     @IBAction func filterTextButtonAction(_ sender: Any) {
         // signal to setup a text layer
-        nsApp.stopModal(withCode: NSApplication.ModalResponse(rawValue: 103))
+        nsApp.mainWindow!.endSheet(filterPalette, returnCode: NSApplication.ModalResponse(rawValue: 103))
     }
 
     @IBAction func tableViewDoubleClick(_ sender: Any) {
-        nsApp.stopModal(withCode: NSApplication.ModalResponse(rawValue: 100))
+        nsApp.mainWindow!.endSheet(filterPalette, returnCode: NSApplication.ModalResponse(rawValue: 100))
     }
 
     func closeDown() {
@@ -1060,17 +963,14 @@ private let inspectorTopY = 36
     // this allows us to set up the right pointers when changing documents
     // in particular the core image view and the effect stack
     func setMainWindow(_ mainWindow: NSWindow?) {
-        var controller: NSWindowController?
-        var document: FunHouseDocument?
-
         // note: if mainWindow is nil, then controller becomes nil here too
-        controller = mainWindow?.windowController
+        let controller = mainWindow?.windowController
         if controller != nil && (controller is FunHouseWindowController) {
             // we have a core image fun house document window (by controller)
             // get the core image view pointer from it
             inspectingCoreImageView = (controller as? FunHouseWindowController)?.coreImageView()
             // load up the FunHouseDocument pointer
-            document = controller?.document as? FunHouseDocument
+            let document = controller?.document as? FunHouseDocument
             // and get the effect stack pointer from it
             inspectingEffectStack = document?.effectStack()
         } else {
@@ -1170,91 +1070,12 @@ private let inspectorTopY = 36
     // handle the filter palette image button
     // return the category name for the category index - used by filter palette category table view
     func categoryName(for i: Int) -> String {
-#if false
-        var s: String?
-
-        switch i {
-        case 0:
-            s = CIFilter.localizedName(forCategory: kCICategoryGeometryAdjustment)
-        case 1:
-            s = CIFilter.localizedName(forCategory: kCICategoryDistortionEffect)
-        case 2:
-            s = CIFilter.localizedName(forCategory: kCICategoryBlur)
-        case 3:
-            s = CIFilter.localizedName(forCategory: kCICategorySharpen)
-        case 4:
-            s = CIFilter.localizedName(forCategory: kCICategoryColorAdjustment)
-        case 5:
-            s = CIFilter.localizedName(forCategory: kCICategoryColorEffect)
-        case 6:
-            s = CIFilter.localizedName(forCategory: kCICategoryStylize)
-        case 7:
-            s = CIFilter.localizedName(forCategory: kCICategoryHalftoneEffect)
-        case 8:
-            s = CIFilter.localizedName(forCategory: kCICategoryTileEffect)
-        case 9:
-            s = CIFilter.localizedName(forCategory: kCICategoryGenerator)
-        case 10:
-            s = CIFilter.localizedName(forCategory: kCICategoryGradient)
-        case 11:
-            s = CIFilter.localizedName(forCategory: kCICategoryTransition)
-        case 12:
-            s = CIFilter.localizedName(forCategory: kCICategoryCompositeOperation)
-        default:
-            s = ""
-        }
-        return s ?? ""
-#else
         return filterIndexToName[i]!
-#endif
     }
 
     // return the category index for the category name - used by filter palette category table view
     func index(forCategory nm: String) -> Int {
-#if false
-        if (nm == CIFilter.localizedName(forCategory: kCICategoryGeometryAdjustment)) {
-            return 0
-        }
-        if (nm == CIFilter.localizedName(forCategory: kCICategoryDistortionEffect)) {
-            return 1
-        }
-        if (nm == CIFilter.localizedName(forCategory: kCICategoryBlur)) {
-            return 2
-        }
-        if (nm == CIFilter.localizedName(forCategory: kCICategorySharpen)) {
-            return 3
-        }
-        if (nm == CIFilter.localizedName(forCategory: kCICategoryColorAdjustment)) {
-            return 4
-        }
-        if (nm == CIFilter.localizedName(forCategory: kCICategoryColorEffect)) {
-            return 5
-        }
-        if (nm == CIFilter.localizedName(forCategory: kCICategoryStylize)) {
-            return 6
-        }
-        if (nm == CIFilter.localizedName(forCategory: kCICategoryHalftoneEffect)) {
-            return 7
-        }
-        if (nm == CIFilter.localizedName(forCategory: kCICategoryTileEffect)) {
-            return 8
-        }
-        if (nm == CIFilter.localizedName(forCategory: kCICategoryGenerator)) {
-            return 9
-        }
-        if (nm == CIFilter.localizedName(forCategory: kCICategoryGradient)) {
-            return 10
-        }
-        if (nm == CIFilter.localizedName(forCategory: kCICategoryTransition)) {
-            return 11
-        }
-        if (nm == CIFilter.localizedName(forCategory: kCICategoryCompositeOperation)) {
-            return 12
-        }
-        return -1
-#else
         return filterNameToIndex[nm]!
-#endif
     }
 
 
@@ -1284,6 +1105,13 @@ private let inspectorTopY = 36
         filterOKButton.isEnabled = true
     }
 
+    // if we see a double-click in the filter list, it's like hitting apply
+    // glue code for determining if a filter layer has a missing image (and should be drawn red to indicate as such)
+    // glue code to set up an image layer
+}
+
+extension EffectStackController: NSTableViewDataSource {
+
     func tableViewSelectionDidChange(_ aNotification: Notification) {
         guard let tv = aNotification.object as? NSTableView else { fatalError() }
         let row = tv.selectedRow
@@ -1306,13 +1134,6 @@ private let inspectorTopY = 36
             break
         }
     }
-
-    // if we see a double-click in the filter list, it's like hitting apply
-    // glue code for determining if a filter layer has a missing image (and should be drawn red to indicate as such)
-    // glue code to set up an image layer
-}
-
-extension EffectStackController: NSTableViewDataSource {
 
     // build the filter list (enumerates all filters)
     // table view data source methods
@@ -1369,54 +1190,3 @@ extension EffectStackController: NSTableViewDataSource {
     }
 
 }
-
-#if false
-@objcMembers class EffectStackBox: NSBox /* subclassed */ {
-    var filter: CIFilter?
-    var master: EffectStackController?
-
-    let boxInset: CGFloat = 3.0
-    let boxFillet: CGFloat = 7.0
-        // control point distance from rectangle corner
-    let cpdelta: CGFloat = 7.0 /*boxFillet*/ * 0.35
-
-    override func draw(_ r: NSRect) {
-        super.draw(r)
-
-        guard let filter = filter, let master = master else { fatalError() }
-
-        if master.effectStackFilterHasMissingImage(filter){
-            // overlay the box now - colorized
-            NSColor(deviceRed: 1.0, green: 0.0, blue: 0.0, alpha: 0.15).set()
-            let path: NSBezierPath = NSBezierPath()
-            let R = NSOffsetRect(bounds.insetBy(dx: CGFloat(boxInset), dy: CGFloat(boxInset)), 0, 1)
-            let bl = R.origin
-            let br = NSPoint(x: R.origin.x + R.size.width, y: R.origin.y)
-            let tr = NSPoint(x: R.origin.x + R.size.width, y: R.origin.y + R.size.height)
-            let tl = NSPoint(x: R.origin.x, y: R.origin.y + R.size.height)
-            path.move(to: NSPoint(x: CGFloat(bl.x + boxFillet), y: bl.y))
-            path.line(to: NSPoint(x: CGFloat(br.x - boxFillet), y: br.y))
-            path.curve(to: NSPoint(x: br.x, y: CGFloat(br.y + boxFillet)), controlPoint1: NSPoint(x: CGFloat(br.x - cpdelta), y: br.y), controlPoint2: NSPoint(x: br.x, y: CGFloat(br.y + cpdelta)))
-            path.line(to: NSPoint(x: tr.x, y: CGFloat(tr.y - boxFillet)))
-            path.curve(to: NSPoint(x: CGFloat(tr.x - boxFillet), y: tr.y), controlPoint1: NSPoint(x: tr.x, y: CGFloat(tr.y - cpdelta)), controlPoint2: NSPoint(x: CGFloat(tr.x - cpdelta), y: tr.y))
-            path.line(to: NSPoint(x: CGFloat(tl.x + boxFillet), y: tl.y))
-            path.curve(to: NSPoint(x: tl.x, y: CGFloat(tl.y - boxFillet)), controlPoint1: NSPoint(x: CGFloat(tl.x + cpdelta), y: tl.y), controlPoint2: NSPoint(x: tl.x, y: CGFloat(tl.y - cpdelta)))
-            path.line(to: NSPoint(x: bl.x, y: CGFloat(bl.y + boxFillet)))
-            path.curve(to: NSPoint(x: CGFloat(bl.x + boxFillet), y: bl.y), controlPoint1: NSPoint(x: bl.x, y: CGFloat(bl.y + cpdelta)), controlPoint2: NSPoint(x: CGFloat(bl.x + cpdelta), y: bl.y))
-            path.close()
-            path.fill()
-        }
-    }
-
-    func setFilter(_ f: CIFilter) {
-        filter = f
-    }
-
-    func setMaster(_ m: EffectStackController) {
-        master = m
-    }
-
-    // this is a subclass of NSBox required so we can draw the interior of the box as red when there's something
-    // in the box (namely an image well) that still needs filling
-}
-#endif

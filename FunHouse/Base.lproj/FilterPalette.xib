@@ -18,12 +18,12 @@
         </customObject>
         <customObject id="-1" userLabel="First Responder" customClass="FirstResponder"/>
         <customObject id="-3" userLabel="Application" customClass="NSObject"/>
-        <window title="Image Units" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" deferred="NO" hidesOnDeactivate="YES" releasedWhenClosed="NO" visibleAtLaunch="NO" frameAutosaveName="imageunitspalette" animationBehavior="default" id="5" userLabel="Filters" customClass="NSPanel">
-            <windowStyleMask key="styleMask" titled="YES" utility="YES" nonactivatingPanel="YES"/>
+        <window title="Image Units" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" deferred="NO" hidesOnDeactivate="YES" releasedWhenClosed="NO" visibleAtLaunch="NO" frameAutosaveName="imageunitspalette" animationBehavior="default" id="5" userLabel="Filters">
+            <windowStyleMask key="styleMask" nonactivatingPanel="YES"/>
             <windowPositionMask key="initialPositionMask" leftStrut="YES" topStrut="YES"/>
             <rect key="contentRect" x="824" y="508" width="598" height="367"/>
             <rect key="screenRect" x="0.0" y="0.0" width="2560" height="1577"/>
-            <view key="contentView" id="6">
+            <view key="contentView" appearanceType="darkAqua" id="6">
                 <rect key="frame" x="0.0" y="0.0" width="598" height="367"/>
                 <autoresizingMask key="autoresizingMask"/>
                 <subviews>
@@ -41,14 +41,14 @@
                                     <color key="backgroundColor" white="0.56854837999999996" alpha="1" colorSpace="calibratedWhite"/>
                                     <color key="gridColor" name="gridColor" catalog="System" colorSpace="catalog"/>
                                     <tableColumns>
-                                        <tableColumn editable="NO" width="138" minWidth="8" maxWidth="1000" id="10">
+                                        <tableColumn editable="NO" width="408" minWidth="8" maxWidth="1000" id="10">
                                             <tableHeaderCell key="headerCell" lineBreakMode="truncatingTail" borderStyle="border" alignment="left">
-                                                <font key="font" metaFont="menu" size="11"/>
+                                                <font key="font" size="14" name="HelveticaNeue"/>
                                                 <color key="textColor" name="headerTextColor" catalog="System" colorSpace="catalog"/>
                                                 <color key="backgroundColor" white="0.33333299" alpha="1" colorSpace="calibratedWhite"/>
                                             </tableHeaderCell>
                                             <textFieldCell key="dataCell" controlSize="small" alignment="left" id="11">
-                                                <font key="font" metaFont="menu" size="11"/>
+                                                <font key="font" size="14" name="HelveticaNeue"/>
                                                 <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                                                 <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                                             </textFieldCell>
@@ -114,7 +114,7 @@
                                                 <color key="backgroundColor" white="0.33333299" alpha="1" colorSpace="calibratedWhite"/>
                                             </tableHeaderCell>
                                             <textFieldCell key="dataCell" controlSize="small" alignment="left" id="42">
-                                                <font key="font" metaFont="menu" size="11"/>
+                                                <font key="font" size="14" name="HelveticaNeue"/>
                                                 <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                                                 <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                                             </textFieldCell>

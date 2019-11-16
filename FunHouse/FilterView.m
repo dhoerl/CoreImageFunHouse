@@ -675,3 +675,54 @@
 }
 
 @end
+
+#if 0
+@objcMembers class EffectStackBox: NSBox /* subclassed */ {
+    var filter: CIFilter?
+    var master: EffectStackController?
+
+    let boxInset: CGFloat = 3.0
+    let boxFillet: CGFloat = 7.0
+        // control point distance from rectangle corner
+    let cpdelta: CGFloat = 7.0 /*boxFillet*/ * 0.35
+
+    override func draw(_ r: NSRect) {
+        super.draw(r)
+
+        guard let filter = filter, let master = master else { fatalError() }
+
+        if master.effectStackFilterHasMissingImage(filter){
+            // overlay the box now - colorized
+            NSColor(deviceRed: 1.0, green: 0.0, blue: 0.0, alpha: 0.15).set()
+            let path: NSBezierPath = NSBezierPath()
+            let R = NSOffsetRect(bounds.insetBy(dx: CGFloat(boxInset), dy: CGFloat(boxInset)), 0, 1)
+            let bl = R.origin
+            let br = NSPoint(x: R.origin.x + R.size.width, y: R.origin.y)
+            let tr = NSPoint(x: R.origin.x + R.size.width, y: R.origin.y + R.size.height)
+            let tl = NSPoint(x: R.origin.x, y: R.origin.y + R.size.height)
+            path.move(to: NSPoint(x: CGFloat(bl.x + boxFillet), y: bl.y))
+            path.line(to: NSPoint(x: CGFloat(br.x - boxFillet), y: br.y))
+            path.curve(to: NSPoint(x: br.x, y: CGFloat(br.y + boxFillet)), controlPoint1: NSPoint(x: CGFloat(br.x - cpdelta), y: br.y), controlPoint2: NSPoint(x: br.x, y: CGFloat(br.y + cpdelta)))
+            path.line(to: NSPoint(x: tr.x, y: CGFloat(tr.y - boxFillet)))
+            path.curve(to: NSPoint(x: CGFloat(tr.x - boxFillet), y: tr.y), controlPoint1: NSPoint(x: tr.x, y: CGFloat(tr.y - cpdelta)), controlPoint2: NSPoint(x: CGFloat(tr.x - cpdelta), y: tr.y))
+            path.line(to: NSPoint(x: CGFloat(tl.x + boxFillet), y: tl.y))
+            path.curve(to: NSPoint(x: tl.x, y: CGFloat(tl.y - boxFillet)), controlPoint1: NSPoint(x: CGFloat(tl.x + cpdelta), y: tl.y), controlPoint2: NSPoint(x: tl.x, y: CGFloat(tl.y - cpdelta)))
+            path.line(to: NSPoint(x: bl.x, y: CGFloat(bl.y + boxFillet)))
+            path.curve(to: NSPoint(x: CGFloat(bl.x + boxFillet), y: bl.y), controlPoint1: NSPoint(x: bl.x, y: CGFloat(bl.y + cpdelta)), controlPoint2: NSPoint(x: CGFloat(bl.x + cpdelta), y: bl.y))
+            path.close()
+            path.fill()
+        }
+    }
+
+    func setFilter(_ f: CIFilter) {
+        filter = f
+    }
+
+    func setMaster(_ m: EffectStackController) {
+        master = m
+    }
+
+    // this is a subclass of NSBox required so we can draw the interior of the box as red when there's something
+    // in the box (namely an image well) that still needs filling
+}
+#endif
