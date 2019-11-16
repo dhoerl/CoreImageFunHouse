@@ -108,7 +108,8 @@ private let inspectorTopY = 36
                 let cy = bounds.origin.y + 0.5 * (bounds.size.height)
                 f.setValue(CIVector(x: cx, y: cy), forKey: "inputCenter")
             }
-        default: fatalError()
+        default:
+            return
         }
     }
 
@@ -314,6 +315,7 @@ private let inspectorTopY = 36
         for classname in names {
             // create an instance of the filter
             guard let filter = CIFilter(name: classname) else { fatalError() }
+//print("ATTRS", filter.attributes)
             // search the filter for any input parameters we can't inspect
             var inspectable = true
             // enumerate all input parameters and generate their UI
@@ -499,7 +501,7 @@ private let inspectorTopY = 36
     }
 
     @IBAction func topPlusButtonAction(_ sender: NSControl) {
-        guard let d = collectFilterImageOrText(), let type = d["type"] as? String else { fatalError() }
+        guard let d = collectFilterImageOrText(), let type = d["type"] as? String else { return }   // "Cancel" on the top most filter
 
         switch type {
         case "filter":
