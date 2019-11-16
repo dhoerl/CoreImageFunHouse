@@ -349,15 +349,15 @@ private let inspectorTopY = 36
     // set changes (dirty the document)
     // call to directly update (and re-layout) the configuration of the effect stack inspector
     // this is the glue code you call to insert a filter layer into the effect stack. this handles save for undo, etc.
-    func insert(_ f: CIFilter, atIndex index: NSNumber) {
+    func insert(_ f: CIFilter, atIndex index: Int) {
         guard let inspectingEffectStack = inspectingEffectStack  else { fatalError() }
 
         // actually insert the filter layer into the effect stack
-        inspectingEffectStack.insertFilterLayer(f, at: index.intValue)
+        inspectingEffectStack.insertFilterLayer(f, at: index)
         // set filter attributes to their defaults
-        inspectingEffectStack.filter(at: index.intValue).setDefaults()
+        inspectingEffectStack.filter(at: index).setDefaults()
         // set any automatic defaults we need (generally the odd image parameter)
-        setAutomaticDefaults(inspectingEffectStack.filter(at: index.intValue), at: index.intValue)
+        setAutomaticDefaults(inspectingEffectStack.filter(at: index), at: index)
 
         if let doc = doc(), let udMgr = doc.undoManager, let target = udMgr.prepare(withInvocationTarget: self) as? EffectStackController {
         // do "save for undo"
@@ -374,12 +374,12 @@ private let inspectorTopY = 36
     }
 
     // this is the high-level glue code you call to insert an image layer into the effect stack. this handles save for undo, etc.
-    func insert(_ image: CIImage, withFilename filename: String, andImageFilePath path: String, atIndex index: NSNumber) {
+    func insert(_ image: CIImage, withFilename filename: String, andImageFilePath path: String, atIndex index: Int) {
         guard let inspectingEffectStack = inspectingEffectStack else { fatalError() }
 
         // actually insert the image layer into the effect stack
-        inspectingEffectStack.insertImageLayer(image, withFilename: filename, at: index.intValue)
-        inspectingEffectStack.setImageLayer(index.intValue, imageFilePath: path)
+        inspectingEffectStack.insertImageLayer(image, withFilename: filename, at: index)
+        inspectingEffectStack.setImageLayer(index, imageFilePath: path)
         // do "save for undo"
         if let doc = doc(), let udMgr = doc.undoManager, let target = udMgr.prepare(withInvocationTarget: self) as? EffectStackController {
             target.removeFilterImageOrText(atIndex: index)
@@ -395,11 +395,11 @@ private let inspectorTopY = 36
     }
 
     // this is the high-level glue code you call to insert a text layer into the effect stack. this handles save for undo, etc.
-    func insert(_ string: String, with image: CIImage, atIndex index: NSNumber) {
+    func insert(_ string: String, with image: CIImage, atIndex index: Int) {
         guard let inspectingEffectStack = inspectingEffectStack else { fatalError() }
 
         // actually insert the text layer into the effect stack
-        inspectingEffectStack.insertTextLayer(string, with: image, at: index.intValue)
+        inspectingEffectStack.insertTextLayer(string, with: image, at: index)
         // do "save for undo"
         if let doc = doc(), let udMgr = doc.undoManager, let target = udMgr.prepare(withInvocationTarget: self) as? EffectStackController {
             target.removeFilterImageOrText(atIndex: index)
@@ -446,7 +446,7 @@ private let inspectorTopY = 36
         playButton.isEnabled = enabled
     }
 
-    func removeFilterImageOrText(atIndex index: NSNumber) {
+    func removeFilterImageOrText(atIndex index: Int) {
         guard let inspectingEffectStack = inspectingEffectStack else { fatalError() }
 
         var typ: String!
@@ -457,22 +457,22 @@ private let inspectorTopY = 36
         var path: String!
 
         // first get handles to parameters we want to retain for "save for undo"
-        typ = inspectingEffectStack.type(at: index.intValue)
+        typ = inspectingEffectStack.type(at: index)
         switch typ {
         case "filter":
-            filter = inspectingEffectStack.filter(at: index.intValue)
+            filter = inspectingEffectStack.filter(at: index)
         case "image":
-            image = inspectingEffectStack.image(at: index.intValue)
-            filename = inspectingEffectStack.filename(at: index.intValue)
-            path = inspectingEffectStack.imageFilePath(at: index.intValue)
+            image = inspectingEffectStack.image(at: index)
+            filename = inspectingEffectStack.filename(at: index)
+            path = inspectingEffectStack.imageFilePath(at: index)
         case "text":
-            image = inspectingEffectStack.image(at: index.intValue)
-            string = inspectingEffectStack.string(at: index.intValue)
+            image = inspectingEffectStack.image(at: index)
+            string = inspectingEffectStack.string(at: index)
         default:
             fatalError()
         }
         // actually remove the layer from the effect stack here
-        inspectingEffectStack.removeLayer(at: index.intValue)
+        inspectingEffectStack.removeLayer(at: index)
 
         // do "save for undo"
         if let doc = doc(), let udMgr = doc.undoManager, let target = udMgr.prepare(withInvocationTarget: self) as? EffectStackController {
@@ -506,13 +506,13 @@ private let inspectorTopY = 36
         switch type {
         case "filter":
             guard let filter = d["filter"] as? CIFilter else { fatalError() }
-            insert(filter, atIndex: NSNumber(value: 0))
+            insert(filter, atIndex: 0)
         case "image":
             guard let image = d["image"]  as? CIImage, let string = d["filename"] as? String, let path = d["imageFilePath"] as? String else { fatalError() }
-            insert(image, withFilename: string, andImageFilePath: path, atIndex: NSNumber(value: 0))
+            insert(image, withFilename: string, andImageFilePath: path, atIndex: 0)
         case "text":
             guard let string = d["string"] as? String, let image = d["image"] as? CIImage else { fatalError() }
-            insert(string, with: image, atIndex: NSNumber(value: 0))
+            insert(string, with: image, atIndex: 0)
         default: fatalError()
         }
         enablePlayButton()
@@ -525,13 +525,13 @@ private let inspectorTopY = 36
         switch type {
         case "filter":
             guard let filter = d["filter"] as? CIFilter else { fatalError() }
-            insert(filter, atIndex: NSNumber(value: index))
+            insert(filter, atIndex: index)
         case "image":
             guard let image = d["image"]  as? CIImage, let string = d["filename"] as? String, let path = d["imageFilePath"] as? String else { fatalError() }
-            insert(image, withFilename: string, andImageFilePath: path, atIndex: NSNumber(value: index))
+            insert(image, withFilename: string, andImageFilePath: path, atIndex: index)
         case "text":
             guard let string = d["string"] as? String, let image = d["image"] as? CIImage else { fatalError() }
-            insert(string, with: image, atIndex: NSNumber(value: index))
+            insert(string, with: image, atIndex: index)
         default: fatalError()
         }
 
@@ -539,7 +539,7 @@ private let inspectorTopY = 36
     }
 
     @IBAction func minusButtonAction(_ sender: NSControl) {
-        removeFilterImageOrText(atIndex: NSNumber(value: sender.tag))
+        removeFilterImageOrText(atIndex: sender.tag)
         enablePlayButton()
     }
 
@@ -558,13 +558,13 @@ private let inspectorTopY = 36
         if !(inspectingEffectStack.type(at: 0) == "image") {
             i = count - 1
             while i >= 0 {
-                removeFilterImageOrText(atIndex: NSNumber(value: i))
+                removeFilterImageOrText(atIndex: i)
                 i -= 1
             }
         } else {
             i = count - 1
             while i > 0 {
-                removeFilterImageOrText(atIndex: NSNumber(value: i))
+                removeFilterImageOrText(atIndex: i)
                 i -= 1
             }
         }
@@ -629,7 +629,7 @@ private let inspectorTopY = 36
                 continue
             }
             // set the value to zero
-            f?.setValue(NSNumber(value: 0.0), forKey: "inputTime")
+            f?.setValue(0.0, forKey: "inputTime")
         }
         // let core image recompute the view
         inspectingCoreImageView?.needsDisplay = true // force a redisplay
@@ -698,7 +698,7 @@ private let inspectorTopY = 36
                     }
                     lastTimeValue = value
                     // set the inputTime value
-                    f?.setValue(NSNumber(value: Double(value)), forKey: "inputTime")
+                    f?.setValue(Double(value), forKey: "inputTime")
                     // increment the transition index
                     transitionIndex += 1
                 }
