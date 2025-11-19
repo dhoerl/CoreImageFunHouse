@@ -196,8 +196,8 @@
     checkBox = [[NSButton alloc] initWithFrame:cbR];
     [checkBox setTarget:master];
     [checkBox setAction:@selector(enableCheckBoxAction:)];
-    [checkBox setButtonType:NSSwitchButton];
-    [checkBox setState:(enabled ? NSOnState : NSOffState)];
+    [checkBox setButtonType:NSButtonTypeSwitch];
+    [checkBox setState:(enabled ? NSControlStateValueOn : NSControlStateValueOff)];
     [checkBox setTitle:@""];
     [checkBox setTag:index];
     [self addSubview:checkBox];
@@ -208,9 +208,9 @@
     S.size.height -= 4;
     S.size.width = 22;
     plusbutton = [[NSButton alloc] initWithFrame:S];
-    [[plusbutton cell] setButtonType:NSMomentaryLightButton];
-    [[plusbutton cell] setBezelStyle:NSShadowlessSquareBezelStyle];
-    [[plusbutton cell] setGradientType:NSGradientConcaveWeak];
+    [[plusbutton cell] setButtonType:NSButtonTypeMomentaryLight];
+    [[plusbutton cell] setBezelStyle:NSBezelStyleShadowlessSquare];
+//    [[plusbutton cell] setGradientType:NSGradientConcaveWeak];
     [plusbutton setImagePosition:NSImageOnly];
     [plusbutton setImage:[NSImage imageNamed:@"plusbutton"]];
     [plusbutton setBordered:NO];
@@ -221,9 +221,9 @@
     // add - button
     S.origin.x += 21;
     minusbutton = [[NSButton alloc] initWithFrame:S];
-    [[minusbutton cell] setButtonType:NSMomentaryLightButton];
-    [[minusbutton cell] setBezelStyle:NSShadowlessSquareBezelStyle];
-    [[minusbutton cell] setGradientType:NSGradientConcaveWeak];
+    [[minusbutton cell] setButtonType:NSButtonTypeMomentaryLight];
+    [[minusbutton cell] setBezelStyle:NSBezelStyleShadowlessSquare];
+//    [[minusbutton cell] setGradientType:NSGradientConcaveWeak];
     [minusbutton setImagePosition:NSImageOnly];
     [minusbutton setImage:[NSImage imageNamed:@"minusbutton"]];
     [minusbutton setBordered:NO];
@@ -280,8 +280,8 @@
     checkBox = [[NSButton alloc] initWithFrame:cbR];
     [checkBox setTarget:master];
     [checkBox setAction:@selector(enableCheckBoxAction:)];
-    [checkBox setButtonType:NSSwitchButton];
-    [checkBox setState:(enabled ? NSOnState : NSOffState)];
+    [checkBox setButtonType:NSButtonTypeSwitch];
+    [checkBox setState:(enabled ? NSControlStateValueOn : NSControlStateValueOff)];
     [checkBox setTitle:@""];
     [checkBox setTag:index];
     [self addSubview:checkBox];
@@ -292,9 +292,9 @@
     S.size.height -= 4;
     S.size.width = 22;
     plusbutton = [[NSButton alloc] initWithFrame:S];
-    [[plusbutton cell] setButtonType:NSMomentaryLightButton];
-    [[plusbutton cell] setBezelStyle:NSShadowlessSquareBezelStyle];
-    [[plusbutton cell] setGradientType:NSGradientConcaveWeak];
+    [[plusbutton cell] setButtonType:NSButtonTypeMomentaryLight];
+    [[plusbutton cell] setBezelStyle:NSBezelStyleShadowlessSquare];
+//    [[plusbutton cell] setGradientType:NSGradientConcaveWeak];
     [plusbutton setImagePosition:NSImageOnly];
     [plusbutton setImage:[NSImage imageNamed:@"plusbutton"]];
     [plusbutton setBordered:NO];
@@ -305,9 +305,9 @@
     // add - button
     S.origin.x += 21;
     minusbutton = [[NSButton alloc] initWithFrame:S];
-    [[minusbutton cell] setButtonType:NSMomentaryLightButton];
-    [[minusbutton cell] setBezelStyle:NSShadowlessSquareBezelStyle];
-    [[minusbutton cell] setGradientType:NSGradientConcaveWeak];
+    [[minusbutton cell] setButtonType:NSButtonTypeMomentaryLight];
+    [[minusbutton cell] setBezelStyle:NSBezelStyleShadowlessSquare];
+//    [[minusbutton cell] setGradientType:NSGradientConcaveWeak];
     [minusbutton setImagePosition:NSImageOnly];
     [minusbutton setImage:[NSImage imageNamed:@"minusbutton"]];
     [minusbutton setBordered:NO];
@@ -580,8 +580,8 @@
     checkBox = [[NSButton alloc] initWithFrame:cbR];
     [checkBox setTarget:master];
     [checkBox setAction:@selector(enableCheckBoxAction:)];
-    [checkBox setButtonType:NSSwitchButton];
-    [checkBox setState:(enabled ? NSOnState : NSOffState)];
+    [checkBox setButtonType:NSButtonTypeSwitch];
+    [checkBox setState:(enabled ? NSControlStateValueOn : NSControlStateValueOff)];
     [checkBox setTitle:@""];
     [checkBox setTag:index];
     [self addSubview:checkBox];
@@ -592,9 +592,9 @@
     S.size.height -= 4;
     S.size.width = 22;
     plusbutton = [[NSButton alloc] initWithFrame:S];
-    [[plusbutton cell] setButtonType:NSMomentaryLightButton];
-    [[plusbutton cell] setBezelStyle:NSShadowlessSquareBezelStyle];
-    [[plusbutton cell] setGradientType:NSGradientConcaveWeak];
+    [[plusbutton cell] setButtonType:NSButtonTypeMomentaryLight];
+    [[plusbutton cell] setBezelStyle:NSBezelStyleShadowlessSquare];
+//    [[plusbutton cell] setGradientType:NSGradientConcaveWeak];
     [plusbutton setImagePosition:NSImageOnly];
     [plusbutton setImage:[NSImage imageNamed:@"plusbutton"]];
     [plusbutton setBordered:NO];
@@ -605,9 +605,9 @@
     // add - button
     S.origin.x += 21;
     minusbutton = [[NSButton alloc] initWithFrame:S];
-    [[minusbutton cell] setButtonType:NSMomentaryLightButton];
-    [[minusbutton cell] setBezelStyle:NSShadowlessSquareBezelStyle];
-    [[minusbutton cell] setGradientType:NSGradientConcaveWeak];
+    [[minusbutton cell] setButtonType:NSButtonTypeMomentaryLight];
+    [[minusbutton cell] setBezelStyle:NSBezelStyleShadowlessSquare];
+//    [[minusbutton cell] setGradientType:NSGradientConcaveWeak];
     [minusbutton setImagePosition:NSImageOnly];
     [minusbutton setImage:[NSImage imageNamed:@"minusbutton"]];
     [minusbutton setBordered:NO];

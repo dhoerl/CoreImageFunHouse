@@ -71,11 +71,9 @@
 // this procedure allows us to intercept the escape key (for full screen zoom)
 - (void)sendEvent:(NSEvent *)event
 {
-    if ([event type] == NSKeyDown)
+    if (event.type == NSEventTypeKeyDown)
     {
-        NSString *str;
-        
-        str = [event characters];
+        NSString *str = event.characters;
         if ([str characterAtIndex:0] == 0x1B) // escape
         {
             [(FunHouseAppDelegate*)[self delegate] zoomToFullScreenAction:self];

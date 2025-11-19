@@ -182,7 +182,7 @@ static void format_floating_point_number(CGFloat v, NSInteger before, NSInteger 
 // this gets called when a filter's check box changes
 - (IBAction)checkBoxChanged:(id)sender
 {
-    NSCellStateValue state;
+    NSControlStateValue state;
     BOOL b;
     
     // make sure we're connected right
@@ -190,7 +190,7 @@ static void format_floating_point_number(CGFloat v, NSInteger before, NSInteger 
     {
         // get the check box boolean value
         state = [checkBox state];
-        b = (state == NSOnState) ? YES : NO;
+        b = (state == NSControlStateValueOn) ? YES : NO;
         // update the filter (using undo-compatible glue code)
         [displayView setFilter:filter value:[NSNumber numberWithBool:b] forKey:key];
         // and set up the undo string based on the filter and key names
@@ -435,67 +435,71 @@ static void format_floating_point_number(CGFloat v, NSInteger before, NSInteger 
 // we need it in CIImage form (to talk with Core Image)
 + (CIImage *)CIImageWithNSImage:(NSImage *)image
 {
-    NSInteger size, sourceTextureBytesPerRow, width, height;
-    NSBitmapImageRep *bitmapimagerep;
-    uint32_t row, col, bpr;
-    unsigned char *sr, *dr, *s, *d, *sourceTextureAddr;
-    NSSize sz;
-    NSData *data;
-    CIImage *im;
+    CGImageRef cgImg = [image CGImageForProposedRect:nil context:nil hints:nil];
+    CIImage *ciImg = [[CIImage alloc] initWithCGImage:cgImg];
+    return ciImg;
 
-    sz = [image size];
-    width = sz.width;
-    height = sz.height;
-    // Get a bitmap image representation of the image
-    [image lockFocus];
-    bitmapimagerep = [[NSBitmapImageRep alloc]
-      initWithFocusedViewRect:NSMakeRect(0.0, 0.0, (CGFloat)width, (CGFloat)height)];
-    [image unlockFocus];
-    // get it into the right format
-    if ([bitmapimagerep bitsPerPixel] == 24)
-    {
-        // retain the data for personal use
-        sourceTextureBytesPerRow = width*4;
-        size = sourceTextureBytesPerRow * height;
-        sourceTextureAddr = malloc(size);
-        bpr = [bitmapimagerep bytesPerRow];
-        for (row = 0, sr = [bitmapimagerep bitmapData], dr = sourceTextureAddr; row < height; row++, sr += bpr, dr += sourceTextureBytesPerRow)
-        {
-            for (col = 0, s = sr, d = dr; col < width; col++, s += 3, d += 4)
-            {
-                d[0] = 255;
-                d[1] = s[0];
-                d[2] = s[1];
-                d[3] = s[2];
-            }
-        }
-    }
-    else
-    {
-        // retain the data for personal use
-        sourceTextureBytesPerRow = width*4;
-        size = sourceTextureBytesPerRow * height;
-        sourceTextureAddr = malloc(size);
-        bpr = [bitmapimagerep bytesPerRow];
-        for (row = 0, sr = [bitmapimagerep bitmapData], dr = sourceTextureAddr; row < height; row++, sr += bpr, dr += sourceTextureBytesPerRow)
-        {
-            for (col = 0, s = sr, d = dr; col < width; col++, s += 4, d += 4)
-            {
-                d[0] = s[3];
-                d[1] = s[0];
-                d[2] = s[1];
-                d[3] = s[2];
-            }
-        }
-    }
-    // and release the data structures created herein
-    data = [NSData dataWithBytes:sourceTextureAddr length:size];
-    CGColorSpaceRef cs = CGColorSpaceCreateDeviceRGB();
-    // create the CIImage from the bitmap data
-    im = [CIImage imageWithBitmapData:data bytesPerRow:sourceTextureBytesPerRow size:CGSizeMake(width, height) format:kCIFormatARGB8 colorSpace:cs];
-    CGColorSpaceRelease(cs);
-    free(sourceTextureAddr);
-    return im;
+//    NSInteger size, sourceTextureBytesPerRow, width, height;
+//    NSBitmapImageRep *bitmapimagerep;
+//    uint32_t row, col, bpr;
+//    unsigned char *sr, *dr, *s, *d, *sourceTextureAddr;
+//    NSSize sz;
+//    NSData *data;
+//    CIImage *im;
+//
+//    sz = [image size];
+//    width = sz.width;
+//    height = sz.height;
+//    // Get a bitmap image representation of the image
+//    [image lockFocus];
+//    bitmapimagerep = [[NSBitmapImageRep alloc] initWithFocusedViewRect:NSMakeRect(0.0, 0.0, (CGFloat)width, (CGFloat)height)];
+////    bitmapimagerep = [NSView cacheDisplayInRect;
+//    [image unlockFocus];
+//    // get it into the right format
+//    if ([bitmapimagerep bitsPerPixel] == 24)
+//    {
+//        // retain the data for personal use
+//        sourceTextureBytesPerRow = width*4;
+//        size = sourceTextureBytesPerRow * height;
+//        sourceTextureAddr = malloc(size);
+//        bpr = [bitmapimagerep bytesPerRow];
+//        for (row = 0, sr = [bitmapimagerep bitmapData], dr = sourceTextureAddr; row < height; row++, sr += bpr, dr += sourceTextureBytesPerRow)
+//        {
+//            for (col = 0, s = sr, d = dr; col < width; col++, s += 3, d += 4)
+//            {
+//                d[0] = 255;
+//                d[1] = s[0];
+//                d[2] = s[1];
+//                d[3] = s[2];
+//            }
+//        }
+//    }
+//    else
+//    {
+//        // retain the data for personal use
+//        sourceTextureBytesPerRow = width*4;
+//        size = sourceTextureBytesPerRow * height;
+//        sourceTextureAddr = malloc(size);
+//        bpr = [bitmapimagerep bytesPerRow];
+//        for (row = 0, sr = [bitmapimagerep bitmapData], dr = sourceTextureAddr; row < height; row++, sr += bpr, dr += sourceTextureBytesPerRow)
+//        {
+//            for (col = 0, s = sr, d = dr; col < width; col++, s += 4, d += 4)
+//            {
+//                d[0] = s[3];
+//                d[1] = s[0];
+//                d[2] = s[1];
+//                d[3] = s[2];
+//            }
+//        }
+//    }
+//    // and release the data structures created herein
+//    data = [NSData dataWithBytes:sourceTextureAddr length:size];
+//    CGColorSpaceRef cs = CGColorSpaceCreateDeviceRGB();
+//    // create the CIImage from the bitmap data
+//    im = [CIImage imageWithBitmapData:data bytesPerRow:sourceTextureBytesPerRow size:CGSizeMake(width, height) format:kCIFormatARGB8 colorSpace:cs];
+//    CGColorSpaceRelease(cs);
+//    free(sourceTextureAddr);
+//    return im;
 }
 
 // this gets called when the user drags an image into a filter's image view
@@ -655,10 +659,12 @@ static void format_floating_point_number(CGFloat v, NSInteger before, NSInteger 
     // write to the image
     [ts drawAtPoint:NSMakePoint(0.0, 0.0)];
     // Get a bitmap image representation of the image
-    bitmapimagerep = [[NSBitmapImageRep alloc]
-      initWithFocusedViewRect:NSMakeRect(0.0, 0.0, sz.width, (CGFloat)sz.height)];
+//    bitmapimagerep = [[NSBitmapImageRep alloc] initWithFocusedViewRect:NSMakeRect(0.0, 0.0, sz.width, (CGFloat)sz.height)];
+    CGRect outRect = NSMakeRect(0.0, 0.0, sz.width, sz.height);
+    CGImageRef cgImg = [image CGImageForProposedRect:&outRect context:nil hints:nil];
     [image unlockFocus];
-    im = [[CIImage alloc] initWithBitmapImageRep:bitmapimagerep];
+//    im = [[CIImage alloc] initWithBitmapImageRep:bitmapimagerep];
+    im = [[CIImage alloc] initWithCGImage:cgImg];
     [dict setValue:im forKey:@"image"];
 }
 
@@ -1596,7 +1602,7 @@ NSString *unInterCap(NSString *s)
     slider = [[NSSlider alloc] initWithFrame:sRect];
     [slider setTarget:self];
     [slider setAction:@selector(sliderChanged:)];
-    [[slider cell] setControlSize:NSMiniControlSize];
+    [[slider cell] setControlSize:NSControlSizeMini];
     [slider setAutoresizingMask:NSViewWidthSizable|NSViewMinYMargin];
     // set up the slider's min and max values from the parameter dictionary
     parameter = [[filter attributes] valueForKey:key];
@@ -1638,7 +1644,7 @@ NSString *unInterCap(NSString *s)
     // set text label to 9 point
     c = [labelTextField cell];
     [c setFont:[NSFont fontWithName:[[c font] fontName] size:9]];
-    [c setAlignment:NSRightTextAlignment];
+    [c setAlignment:NSTextAlignmentRight];
     // compute the label text, ellipsize if necessary
     label = [ParameterView ellipsizeField:[c drawingRectForBounds:[labelTextField bounds]].size.width font:[c font] string:label];
     [labelTextField setStringValue:label];
@@ -1676,10 +1682,10 @@ NSString *unInterCap(NSString *s)
     // set text readout to 9 point
     c = [readoutTextField cell];
     [c setFont:[NSFont fontWithName:[[c font] fontName] size:9]];
-    [c setAlignment:NSLeftTextAlignment];
+    [c setAlignment:NSTextAlignmentLeft];
     [readoutTextField setEditable:YES];
     [readoutTextField setDrawsBackground:YES];
-    [[readoutTextField cell] setControlSize:NSSmallControlSize];
+    [[readoutTextField cell] setControlSize:NSControlSizeSmall];
     [readoutTextField setAutoresizingMask:NSViewMinXMargin|NSViewMinYMargin];
     [self addSubview:readoutTextField];
 }
@@ -1689,7 +1695,7 @@ NSString *unInterCap(NSString *s)
 - (void)addCheckBoxForFilter:(CIFilter *)f key:(NSString *)k displayView:(CoreImageView *)v master:(EffectStackController *)m
 {
     BOOL b;
-    NSCellStateValue state;
+    NSControlStateValue state;
     NSRect sRect;
     NSNumber *number;
     NSString *label;
@@ -1706,14 +1712,14 @@ NSString *unInterCap(NSString *s)
     checkBox = [[NSButton alloc] initWithFrame:sRect];
     [checkBox setTarget:self];
     [checkBox setAction:@selector(checkBoxChanged:)];
-    [[checkBox cell] setControlSize:NSMiniControlSize];
-    [checkBox setButtonType:NSSwitchButton];
+    [[checkBox cell] setControlSize:NSControlSizeMini];
+    [checkBox setButtonType:NSButtonTypeSwitch];
     [checkBox setAutoresizingMask:NSViewMaxXMargin|NSViewMinYMargin];
     parameter = [[filter attributes] valueForKey:key];
     // set up its state from its value
     number = [filter valueForKey:key];
     b = [number boolValue];
-    state = b ? NSOnState : NSOffState;
+    state = b ? NSControlStateValueOn : NSControlStateValueOff;
     [checkBox setState:state];
     [self addSubview:checkBox];
     if (![key hasPrefix:@"input"])
@@ -1726,7 +1732,7 @@ NSString *unInterCap(NSString *s)
     // set text label to 9 point
     c = [checkBox cell];
     [c setFont:[NSFont fontWithName:[[c font] fontName] size:9]];
-    [c setAlignment:NSLeftTextAlignment];
+    [c setAlignment:NSTextAlignmentLeft];
 }
 
 // add a color well for a CIColor parameter
@@ -1767,7 +1773,7 @@ NSString *unInterCap(NSString *s)
     // set text label to 9 point
     c = [labelTextField cell];
     [c setFont:[NSFont fontWithName:[[c font] fontName] size:9]];
-    [c setAlignment:NSRightTextAlignment];
+    [c setAlignment:NSTextAlignmentRight];
     label = [ParameterView ellipsizeField:[c drawingRectForBounds:[labelTextField bounds]].size.width font:[c font] string:label];
     [labelTextField setStringValue:label];
     [labelTextField setEditable:NO];
@@ -1818,7 +1824,7 @@ NSString *unInterCap(NSString *s)
     // set text label to 9 point
     c = [labelTextField cell];
     [c setFont:[NSFont fontWithName:[[c font] fontName] size:9]];
-    [c setAlignment:NSRightTextAlignment];
+    [c setAlignment:NSTextAlignmentRight];
     // determine if we need to ellipsize the text label
     label = [ParameterView ellipsizeField:[c drawingRectForBounds:[labelTextField bounds]].size.width font:[c font] string:label];
     [labelTextField setStringValue:label];
@@ -1838,7 +1844,7 @@ NSString *unInterCap(NSString *s)
     // set text label to 9 point
     c = [readout1TextField cell];
     [c setFont:[NSFont fontWithName:[[c font] fontName] size:9]];
-    [c setAlignment:NSLeftTextAlignment];
+    [c setAlignment:NSTextAlignmentLeft];
     [readout1TextField setEditable:YES];
     [readout1TextField setBezeled:YES];
     [readout1TextField setDrawsBackground:YES];
@@ -1855,7 +1861,7 @@ NSString *unInterCap(NSString *s)
     // set text label to 9 point
     c = [readout2TextField cell];
     [c setFont:[NSFont fontWithName:[[c font] fontName] size:9]];
-    [c setAlignment:NSLeftTextAlignment];
+    [c setAlignment:NSTextAlignmentLeft];
     [readout2TextField setEditable:YES];
     [readout2TextField setBezeled:YES];
     [readout2TextField setDrawsBackground:YES];
@@ -1872,7 +1878,7 @@ NSString *unInterCap(NSString *s)
     // set text label to 9 point
     c = [readout3TextField cell];
     [c setFont:[NSFont fontWithName:[[c font] fontName] size:9]];
-    [c setAlignment:NSLeftTextAlignment];
+    [c setAlignment:NSTextAlignmentLeft];
     [readout3TextField setEditable:YES];
     [readout3TextField setBezeled:YES];
     [readout3TextField setDrawsBackground:YES];
@@ -1889,7 +1895,7 @@ NSString *unInterCap(NSString *s)
     // set text label to 9 point
     c = [readout4TextField cell];
     [c setFont:[NSFont fontWithName:[[c font] fontName] size:9]];
-    [c setAlignment:NSLeftTextAlignment];
+    [c setAlignment:NSTextAlignmentLeft];
     [readout4TextField setEditable:YES];
     [readout4TextField setBezeled:YES];
     [readout4TextField setDrawsBackground:YES];
@@ -1943,7 +1949,7 @@ NSString *unInterCap(NSString *s)
     // set text label to 9 point
     c = [labelTextField cell];
     [c setFont:[NSFont fontWithName:[[c font] fontName] size:9]];
-    [c setAlignment:NSRightTextAlignment];
+    [c setAlignment:NSTextAlignmentRight];
     // determine if we need to ellipsize the text label
     label = [ParameterView ellipsizeField:[c drawingRectForBounds:[labelTextField bounds]].size.width font:[c font] string:label];
     [labelTextField setStringValue:label];
@@ -1963,7 +1969,7 @@ NSString *unInterCap(NSString *s)
     // set text label to 9 point
     c = [readout1TextField cell];
     [c setFont:[NSFont fontWithName:[[c font] fontName] size:9]];
-    [c setAlignment:NSLeftTextAlignment];
+    [c setAlignment:NSTextAlignmentLeft];
     [readout1TextField setEditable:YES];
     [readout1TextField setBezeled:YES];
     [readout1TextField setDrawsBackground:YES];
@@ -1980,7 +1986,7 @@ NSString *unInterCap(NSString *s)
     // set text label to 9 point
     c = [readout2TextField cell];
     [c setFont:[NSFont fontWithName:[[c font] fontName] size:9]];
-    [c setAlignment:NSLeftTextAlignment];
+    [c setAlignment:NSTextAlignmentLeft];
     [readout2TextField setEditable:YES];
     [readout2TextField setBezeled:YES];
     [readout2TextField setDrawsBackground:YES];
@@ -2034,7 +2040,7 @@ NSString *unInterCap(NSString *s)
     scaleSlider = [[NSSlider alloc] initWithFrame:sScaleRect];
     [scaleSlider setTarget:self];
     [scaleSlider setAction:@selector(scaleSliderChanged:)];
-    [[scaleSlider cell] setControlSize:NSMiniControlSize];
+        [[scaleSlider cell] setControlSize:NSControlSizeMini];
     [scaleSlider setAutoresizingMask:NSViewWidthSizable|NSViewMinYMargin];
     [scaleSlider setMinValue:-2.0];
     [scaleSlider setMaxValue:2.0];
@@ -2048,7 +2054,7 @@ NSString *unInterCap(NSString *s)
     // set text label to 9 point
     c = [scaleLabelTextField cell];
     [c setFont:[NSFont fontWithName:[[c font] fontName] size:9]];
-    [c setAlignment:NSRightTextAlignment];
+        [c setAlignment:NSTextAlignmentRight];
     [scaleLabelTextField setStringValue:label];
     [scaleLabelTextField setEditable:NO];
     [scaleLabelTextField setBezeled:NO];
@@ -2064,7 +2070,7 @@ NSString *unInterCap(NSString *s)
     // set text label to 9 point
     c = [scaleReadoutTextField cell];
     [c setFont:[NSFont fontWithName:[[c font] fontName] size:9]];
-    [c setAlignment:NSLeftTextAlignment];
+        [c setAlignment:NSTextAlignmentLeft];
     [scaleReadoutTextField setEditable:YES];
     [scaleReadoutTextField setBezeled:YES];
     [scaleReadoutTextField setDrawsBackground:YES];
@@ -2074,7 +2080,7 @@ NSString *unInterCap(NSString *s)
     angleSlider = [[NSSlider alloc] initWithFrame:sAngleRect];
     [angleSlider setTarget:self];
     [angleSlider setAction:@selector(angleSliderChanged:)];
-    [[angleSlider cell] setControlSize:NSMiniControlSize];
+        [[angleSlider cell] setControlSize:NSControlSizeMini];
     [angleSlider setAutoresizingMask:NSViewWidthSizable|NSViewMinYMargin];
     [angleSlider setMinValue:0.0];
     [angleSlider setMaxValue:2.0 * M_PI];
@@ -2088,7 +2094,7 @@ NSString *unInterCap(NSString *s)
     // set text label to 9 point
     c = [angleLabelTextField cell];
     [c setFont:[NSFont fontWithName:[[c font] fontName] size:9]];
-    [c setAlignment:NSRightTextAlignment];
+        [c setAlignment:NSTextAlignmentRight];
     [angleLabelTextField setStringValue:label];
     [angleLabelTextField setEditable:NO];
     [angleLabelTextField setBezeled:NO];
@@ -2104,7 +2110,7 @@ NSString *unInterCap(NSString *s)
     // set text label to 9 point
     c = [angleReadoutTextField cell];
     [c setFont:[NSFont fontWithName:[[c font] fontName] size:9]];
-    [c setAlignment:NSLeftTextAlignment];
+        [c setAlignment:NSTextAlignmentLeft];
     [angleReadoutTextField setEditable:YES];
     [angleReadoutTextField setBezeled:YES];
     [angleReadoutTextField setDrawsBackground:YES];
@@ -2114,7 +2120,7 @@ NSString *unInterCap(NSString *s)
     stretchSlider = [[NSSlider alloc] initWithFrame:sStretchRect];
     [stretchSlider setTarget:self];
     [stretchSlider setAction:@selector(stretchSliderChanged:)];
-    [[stretchSlider cell] setControlSize:NSMiniControlSize];
+        [[stretchSlider cell] setControlSize:NSControlSizeMini];
     [stretchSlider setAutoresizingMask:NSViewWidthSizable|NSViewMinYMargin];
     [stretchSlider setMinValue:-2.0];
     [stretchSlider setMaxValue:2.0];
@@ -2128,7 +2134,7 @@ NSString *unInterCap(NSString *s)
     // set text label to 9 point
     c = [stretchLabelTextField cell];
     [c setFont:[NSFont fontWithName:[[c font] fontName] size:9]];
-    [c setAlignment:NSRightTextAlignment];
+        [c setAlignment:NSTextAlignmentRight];
     [stretchLabelTextField setStringValue:label];
     [stretchLabelTextField setEditable:NO];
     [stretchLabelTextField setBezeled:NO];
@@ -2144,7 +2150,7 @@ NSString *unInterCap(NSString *s)
     // set text label to 9 point
     c = [stretchReadoutTextField cell];
     [c setFont:[NSFont fontWithName:[[c font] fontName] size:9]];
-    [c setAlignment:NSLeftTextAlignment];
+        [c setAlignment:NSTextAlignmentLeft];
     [stretchReadoutTextField setEditable:YES];
     [stretchReadoutTextField setBezeled:YES];
     [stretchReadoutTextField setDrawsBackground:YES];
@@ -2154,7 +2160,7 @@ NSString *unInterCap(NSString *s)
     skewSlider = [[NSSlider alloc] initWithFrame:sSkewRect];
     [skewSlider setTarget:self];
     [skewSlider setAction:@selector(skewSliderChanged:)];
-    [[skewSlider cell] setControlSize:NSMiniControlSize];
+        [[skewSlider cell] setControlSize:NSControlSizeMini];
     [skewSlider setAutoresizingMask:NSViewWidthSizable|NSViewMinYMargin];
     [skewSlider setMinValue:-10.0];
     [skewSlider setMaxValue:10.0];
@@ -2168,7 +2174,7 @@ NSString *unInterCap(NSString *s)
     // set text label to 9 point
     c = [skewLabelTextField cell];
     [c setFont:[NSFont fontWithName:[[c font] fontName] size:9]];
-    [c setAlignment:NSRightTextAlignment];
+        [c setAlignment:NSTextAlignmentRight];
     [skewLabelTextField setStringValue:label];
     [skewLabelTextField setEditable:NO];
     [skewLabelTextField setBezeled:NO];
@@ -2184,7 +2190,7 @@ NSString *unInterCap(NSString *s)
     // set text label to 9 point
     c = [skewReadoutTextField cell];
     [c setFont:[NSFont fontWithName:[[c font] fontName] size:9]];
-    [c setAlignment:NSLeftTextAlignment];
+        [c setAlignment:NSTextAlignmentLeft];
     [skewReadoutTextField setEditable:YES];
     [skewReadoutTextField setBezeled:YES];
     [skewReadoutTextField setDrawsBackground:YES];
@@ -2229,7 +2235,7 @@ NSString *unInterCap(NSString *s)
     [imageView setAction:@selector(imageWellChanged:)];
     [imageView setImageFrameStyle:NSImageFrameGrayBezel];
     [imageView setEditable:YES];
-    [imageView setImageScaling:NSScaleProportionally];
+    [imageView setImageScaling: NSImageScaleProportionallyUpOrDown];
     parameter = [[filter attributes] valueForKey:key];
     im = [filter valueForKey:key];
     // create the thumbnail for the image
@@ -2285,7 +2291,7 @@ NSString *unInterCap(NSString *s)
     // set text label to 9 point
     c = [labelTextField cell];
     [c setFont:[NSFont fontWithName:[[c font] fontName] size:9]];
-    [c setAlignment:NSRightTextAlignment];
+    [c setAlignment:NSTextAlignmentRight];
     label = [ParameterView ellipsizeField:[c drawingRectForBounds:[labelTextField bounds]].size.width font:[c font] string:label];
     [labelTextField setStringValue:label];
     [labelTextField setEditable:NO];
@@ -2300,11 +2306,11 @@ NSString *unInterCap(NSString *s)
     [pushButton setAutoresizingMask:NSViewWidthSizable|NSViewMinXMargin|NSViewMinYMargin];
     [pushButton setBordered:YES];
     [pushButton setEnabled:YES];
-    [pushButton setButtonType:NSMomentaryPushInButton];
-    [pushButton setBezelStyle:NSRoundedBezelStyle];
+    [pushButton setButtonType:NSButtonTypeMomentaryPushIn];
+    [pushButton setBezelStyle:NSBezelStylePush];
     [pushButton setTitle:@"Choose"];
     [pushButton setImagePosition:NSNoImage];
-    [[pushButton cell] setControlSize:NSMiniControlSize];
+    [[pushButton cell] setControlSize:NSControlSizeMini];
     [self addSubview:pushButton];
 }    
 
@@ -2379,12 +2385,12 @@ NSString *unInterCap(NSString *s)
     [pushButton setAutoresizingMask:NSViewWidthSizable|NSViewMinXMargin|NSViewMinYMargin];
     [pushButton setBordered:YES];
     [pushButton setEnabled:YES];
-    [pushButton setButtonType:NSMomentaryPushInButton];
-    [pushButton setBezelStyle:NSRoundedBezelStyle];
+    [pushButton setButtonType:NSButtonTypeMomentaryPushIn];
+    [pushButton setBezelStyle:NSBezelStylePush];
     [pushButton setTitle:@"Choose"];
     [pushButton setImagePosition:NSNoImage];
     [pushButton setTag:tag];
-    [[pushButton cell] setControlSize:NSMiniControlSize];
+    [[pushButton cell] setControlSize:NSControlSizeMini];
     [self addSubview:pushButton];
 }    
 
@@ -2410,7 +2416,7 @@ NSString *unInterCap(NSString *s)
     [scrollView setHasVerticalScroller:YES];
     [scrollView setHasHorizontalScroller:NO];
     [scrollView setAutoresizingMask:(NSViewWidthSizable | NSViewHeightSizable)];
-    [[scrollView verticalScroller] setControlSize:NSSmallControlSize];
+    [[scrollView verticalScroller] setControlSize:NSControlSizeSmall];
     [[scrollView contentView] setAutoresizesSubviews:YES];
     [self addSubview:scrollView];
 
@@ -2471,7 +2477,7 @@ NSString *unInterCap(NSString *s)
     slider = [[NSSlider alloc] initWithFrame:sRect];
     [slider setTarget:self];
     [slider setAction:@selector(textSliderChanged:)];
-    [[slider cell] setControlSize:NSMiniControlSize];
+    [[slider cell] setControlSize:NSControlSizeMini];
     [slider setAutoresizingMask:NSViewWidthSizable|NSViewMinYMargin];
     [slider setMaxValue:hi];
     [slider setMinValue:lo];
@@ -2486,7 +2492,7 @@ NSString *unInterCap(NSString *s)
     // set text label to 9 point
     c = [labelTextField cell];
     [c setFont:[NSFont fontWithName:[[c font] fontName] size:9]];
-    [c setAlignment:NSRightTextAlignment];
+    [c setAlignment:NSTextAlignmentRight];
     label = [ParameterView ellipsizeField:[c drawingRectForBounds:[labelTextField bounds]].size.width font:[c font] string:label];
     [labelTextField setStringValue:label];
     [labelTextField setEditable:NO];
@@ -2505,10 +2511,10 @@ NSString *unInterCap(NSString *s)
     // set text label to 9 point
     c = [readoutTextField cell];
     [c setFont:[NSFont fontWithName:[[c font] fontName] size:9]];
-    [c setAlignment:NSLeftTextAlignment];
+    [c setAlignment:NSTextAlignmentLeft];
     [readoutTextField setEditable:YES];
     [readoutTextField setDrawsBackground:YES];
-    [[readoutTextField cell] setControlSize:NSSmallControlSize];
+    [[readoutTextField cell] setControlSize:NSControlSizeSmall];
     [readoutTextField setAutoresizingMask:NSViewMinXMargin|NSViewMinYMargin];
     [self addSubview:readoutTextField];
 }
@@ -2563,7 +2569,7 @@ NSString *unInterCap(NSString *s)
 
     // write data to the pasteboard
     fileList = [NSArray arrayWithObjects:[self filePath], nil];
-    pboard = [NSPasteboard pasteboardWithName:NSDragPboard];
+    pboard = [NSPasteboard pasteboardWithName:NSPasteboardNameDrag];
     [pboard declareTypes:[NSArray arrayWithObject:NSFilenamesPboardType] owner:nil];
     [pboard setPropertyList:fileList forType:NSFilenamesPboardType];
     // start the drag operation

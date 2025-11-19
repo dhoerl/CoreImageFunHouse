@@ -681,7 +681,7 @@ private let inspectorTopY = 36
 
         fv.titlePosition = NSBox.TitlePosition.noTitle
         fv.autoresizingMask = [.width, .minYMargin]
-        fv.borderType = NSBorderType.grooveBorder
+//        fv.borderType = NSBorderType.grooveBorder
         fv.boxType = NSBox.BoxType.primary
         fv.setMaster(self)
         fv.setTag(index)
@@ -825,7 +825,7 @@ private let inspectorTopY = 36
         view.addSubview(fv)
         fv.titlePosition = NSBox.TitlePosition.noTitle
         fv.autoresizingMask = [.width, .minYMargin]
-        fv.borderType = NSBorderType.grooveBorder
+//        fv.borderType = NSBorderType.grooveBorder
         fv.boxType = NSBox.BoxType.primary
         fv.setMaster(self)
         fv.setTag(index)
@@ -856,7 +856,7 @@ private let inspectorTopY = 36
 
         fv.titlePosition = NSBox.TitlePosition.noTitle
         fv.autoresizingMask = [.width, .minYMargin]
-        fv.borderType = NSBorderType.grooveBorder
+//        fv.borderType = NSBorderType.grooveBorder
         fv.boxType = NSBox.BoxType.primary
         fv.setMaster(self)
         fv.setTag(index)
