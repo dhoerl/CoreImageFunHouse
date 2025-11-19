@@ -54,12 +54,8 @@
 
 + (void)setupDefaults
 {
-    NSDictionary *userDefaultsValuesDict;
- 
-    userDefaultsValuesDict=[NSDictionary dictionaryWithObject:[NSNumber numberWithBool:NO] forKey:@"useSoftwareRenderer"];
- 
     // set them in the standard user defaults
-    [[NSUserDefaults standardUserDefaults] registerDefaults:userDefaultsValuesDict];
+    [[NSUserDefaults standardUserDefaults] registerDefaults:@{@"useSoftwareRenderer" : @NO}];
 }
 
 - (void)applicationWillFinishLaunching:(NSNotification *)notification
@@ -109,7 +105,7 @@
         count = [files count];
         for (i = 0; i < count; i++)
         {
-            file = [files objectAtIndex:i];
+            file = files[i];
             sourcefile = [[source stringByAppendingString:@"/"] stringByAppendingString:file];
             destfile = [[path2 stringByAppendingString:@"/"] stringByAppendingString:file];
             [manager copyItemAtPath:sourcefile toPath:destfile error:&err];
@@ -126,7 +122,7 @@
         [op setDirectoryURL:[NSURL fileURLWithPath:path2 isDirectory:YES]];
         [op setAllowedFileTypes:[NSArray arrayWithObjects:@"jpeg", @"jpg", @"tiff", @"tif", @"png", @"crw", @"cr2", @"raf", @"mrw", @"nef", @"srf", @"exr", @"funhouse", nil]];
 
-        if ([op runModal] == NSOKButton) {
+        if ([op runModal] == NSModalResponseOK) {
             //[[NSDocumentController sharedDocumentController] openDocumentWithContentsOfURL:[[op URLs] objectAtIndex:0] display:YES error:&err];
             [[NSDocumentController sharedDocumentController] openDocumentWithContentsOfURL:[[op URLs] objectAtIndex:0] display:YES completionHandler:^(NSDocument * _Nullable document, BOOL documentWasAlreadyOpen, NSError * _Nullable error) {
                 if (error) { NSLog(@"ERROR: %@", error); }
@@ -192,14 +188,14 @@
 - (BOOL)validateMenuItem:(NSMenuItem *)item
 {
     NSUndoManager *um = [[[NSDocumentController sharedDocumentController] currentDocument] undoManager];
-    if ([[[item menu] title] isEqualToString:@"Edit"])
+    if ([item.menu.title isEqualToString:@"Edit"])
     {
-        if ([[[item title] substringToIndex:4] isEqualToString:@"Undo"])
+        if ([[item.title substringToIndex:4] isEqualToString:@"Undo"])
         {
             [item setTitle:[um undoMenuItemTitle]];
             return [um canUndo];
         }
-        else if ([[[item title] substringToIndex:4] isEqualToString:@"Redo"])
+        else if ([[item.title substringToIndex:4] isEqualToString:@"Redo"])
         {
             [item setTitle:[um redoMenuItemTitle]];
             return [um canRedo];

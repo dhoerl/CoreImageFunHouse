@@ -57,15 +57,15 @@
     // provide a set of "standard" images used to fill in filter CIImage parameters
     // see the EffectStackController setAutomaticDefaults: method
     // a texture - used for CIGlassDistortion
-    texturepath = [[NSBundle mainBundle] pathForResource:@"smoothtexture" ofType: @"tiff"];
+    _texturepath = [NSBundle.mainBundle pathForResource:@"smoothtexture" ofType: @"tiff"];
     // a material map used for shading - used for CIShadedMaterial
-    shadingemappath = [[NSBundle mainBundle] pathForResource:@"lightball" ofType: @"tiff"];
+    _shadingemappath = [NSBundle.mainBundle pathForResource:@"lightball" ofType: @"tiff"];
     // a material map with alpha that's not all 1 - used for CIRippleTransition
-    alphaemappath = [[NSBundle mainBundle] pathForResource:@"restrictedshine" ofType: @"tiff"];
+    _alphaemappath = [NSBundle.mainBundle pathForResource:@"restrictedshine" ofType: @"tiff"];
     // color ramp - a width "n" height 1 image - used for CIColorMap
-    ramppath = [[NSBundle mainBundle] pathForResource:@"colormap" ofType: @"tiff"];
+    _ramppath = [NSBundle.mainBundle pathForResource:@"colormap" ofType: @"tiff"];
     // mask (grayscale image) used for CIDisintegrateWithMaskTransition
-    maskpath = [[NSBundle mainBundle] pathForResource:@"mask" ofType: @"tiff"];
+    _maskpath = [NSBundle.mainBundle pathForResource:@"mask" ofType: @"tiff"];
 }
 
 // this procedure allows us to intercept the escape key (for full screen zoom)
@@ -87,72 +87,69 @@
 // (depends on the current state)
 - (void)setFullScreenMenuTitle:(BOOL)inFullScreen
 {
-    if (inFullScreen)
-        [zoomToFullScreenMenuItem setTitle:@"Exit Full Screen"];
-    else
-        [zoomToFullScreenMenuItem setTitle:@"Zoom To Full Screen"];
+    [zoomToFullScreenMenuItem setTitle:inFullScreen ? @"Exit Full Screen" : @"Zoom To Full Screen"];
 }
 
 // accessors for default images (and their paths) for filters
 // load the images only on demand to keep launch time down
 - (CIImage *)defaultTexture
 {
-    if (texture == NULL)
-        texture = [CIImage imageWithContentsOfURL:[NSURL fileURLWithPath:texturepath]];
-    return texture;
+    if (_texture == NULL)
+        _texture = [CIImage imageWithContentsOfURL:[NSURL fileURLWithPath:self.texturepath]];
+    return _texture;
 }
 
 - (NSString *)defaultTexturePath
 {
-    return texturepath;
+    return _texturepath;
 }
 
 - (CIImage *)defaultShadingEMap
 {
-    if(shadingemap == NULL)
-	shadingemap = [CIImage imageWithContentsOfURL:[NSURL fileURLWithPath:shadingemappath]];
-    return shadingemap;
+    if(_shadingemap == NULL)
+        _shadingemap = [CIImage imageWithContentsOfURL:[NSURL fileURLWithPath:_shadingemappath]];
+    return _shadingemap;
 }
 
 - (NSString *)defaultShadingEMapPath
 {
-    return shadingemappath;
+    return _shadingemappath;
 }
 
 - (CIImage *)defaultAlphaEMap
 {
-    if(alphaemap == NULL)
-	alphaemap = [CIImage imageWithContentsOfURL:[NSURL fileURLWithPath:alphaemappath]];
-    return alphaemap;
+    if(_alphaemap == NULL)
+        _alphaemap = [CIImage imageWithContentsOfURL:[NSURL fileURLWithPath:_alphaemappath]];
+    return _alphaemap;
 }
 
 - (NSString *)defaultAlphaEMapPath
 {
-    return alphaemappath;
+    return _alphaemappath;
 }
 
 - (CIImage *)defaultRamp
 {
-    if(ramp == NULL)
-	ramp = [CIImage imageWithContentsOfURL:[NSURL fileURLWithPath:ramppath]];
-    return ramp;
+    if(_ramp == NULL)
+        _ramp = [CIImage imageWithContentsOfURL:[NSURL fileURLWithPath:_ramppath]];
+    return _ramp;
 }
 
 - (NSString *)defaultRampPath
 {
-    return ramppath;
+    return _ramppath;
 }
 
 - (CIImage *)defaultMask
 {
-    if(mask == NULL)
-	mask = [CIImage imageWithContentsOfURL:[NSURL fileURLWithPath:maskpath]];
-    return mask;
+    if(_mask == NULL)
+        _mask = [CIImage imageWithContentsOfURL:[NSURL fileURLWithPath:_maskpath]];
+    return _mask;
 }
 
 - (NSString *)defaultMaskPath
 {
-    return maskpath;
+    return _maskpath;
 }
 
 @end

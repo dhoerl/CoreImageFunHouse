@@ -50,20 +50,21 @@
 @interface FunHouseApplication: NSApplication
 {
     IBOutlet NSMenuItem *zoomToFullScreenMenuItem;
-    // a set of "standard" images used to fill in filter CIImage parameters
-    // see the EffectStackController setAutomaticDefaults: method
-    CIImage *texture;               // a texture - used for CIGlassDistortion
-    CIImage *shadingemap;           // a material map used for shading - used for CIShadedMaterial
-    CIImage *alphaemap;             // a material map with alpha that's not all 1 - used for CIRippleTransition
-    CIImage *ramp;                  // color ramp - a width "n" height 1 image - used for CIColorMap
-    CIImage *mask;                  // mask (grayscale image) used for CIDisintegrateWithMaskTransition
-    // original paths for the above images
-    NSString *texturepath;
-    NSString *shadingemappath;
-    NSString *alphaemappath;
-    NSString *ramppath;
-    NSString *maskpath;
 }
+
+// a set of "standard" images used to fill in filter CIImage parameters
+// see the EffectStackController setAutomaticDefaults: method
+@property (nonatomic) CIImage *texture;               // a texture - used for CIGlassDistortion
+@property (nonatomic) CIImage *shadingemap;           // a material map used for shading - used for CIShadedMaterial
+@property (nonatomic) CIImage *alphaemap;             // a material map with alpha that's not all 1 - used for CIRippleTransition
+@property (nonatomic) CIImage *ramp;                  // color ramp - a width "n" height 1 image - used for CIColorMap
+@property (nonatomic) CIImage *mask;                  // mask (grayscale image) used for CIDisintegrateWithMaskTransition
+// original paths for the above images
+@property (nonatomic) NSString *texturepath;
+@property (nonatomic) NSString *shadingemappath;
+@property (nonatomic) NSString *alphaemappath;
+@property (nonatomic) NSString *ramppath;
+@property (nonatomic) NSString *maskpath;
 
 - (void)setFullScreenMenuTitle:(BOOL)inFullScreen;
 
