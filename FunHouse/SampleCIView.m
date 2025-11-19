@@ -192,7 +192,7 @@
 - (void)displayProfileChanged:(NSNotification*)notification
 {
 	CGDirectDisplayID oldDid = _did;
-	_did = (CGDirectDisplayID)[[[[[self window] screen] deviceDescription] objectForKey:@"NSScreenNumber"] pointerValue];
+	_did = [self.window.screen.deviceDescription[@"NSScreenNumber"] intValue];
 	if(_did == oldDid)
 		return;
 	
