@@ -97,7 +97,7 @@
     
     w = [self window];
     // create a new core image view (the size of the entire content view) for the full screen window
-    coreImageView = [[[CoreImageView alloc] initWithFrame:[[w contentView] bounds]] autorelease];
+    coreImageView = [[CoreImageView alloc] initWithFrame:[[w contentView] bounds]];
     // tie us in as its controller
     [coreImageView setFunHouseWindowController:self];
     [self setUpCoreImageView];
@@ -114,7 +114,6 @@
     [[NSNotificationCenter defaultCenter] removeObserver:self];
     // Balance the -setFunHouseWindowController: that our -windowDidLoad does.
     [coreImageView setFunHouseWindowController:nil];
-    [super dealloc];
 }
 
 // this gets called when a typical window is loaded from the FunHouseWindow.nib file

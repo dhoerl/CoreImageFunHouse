@@ -57,30 +57,15 @@
     // provide a set of "standard" images used to fill in filter CIImage parameters
     // see the EffectStackController setAutomaticDefaults: method
     // a texture - used for CIGlassDistortion
-    texturepath = [[[NSBundle mainBundle] pathForResource:@"smoothtexture" ofType: @"tiff"] retain];
+    texturepath = [[NSBundle mainBundle] pathForResource:@"smoothtexture" ofType: @"tiff"];
     // a material map used for shading - used for CIShadedMaterial
-    shadingemappath = [[[NSBundle mainBundle] pathForResource:@"lightball" ofType: @"tiff"] retain];
+    shadingemappath = [[NSBundle mainBundle] pathForResource:@"lightball" ofType: @"tiff"];
     // a material map with alpha that's not all 1 - used for CIRippleTransition
-    alphaemappath = [[[NSBundle mainBundle] pathForResource:@"restrictedshine" ofType: @"tiff"] retain];
+    alphaemappath = [[NSBundle mainBundle] pathForResource:@"restrictedshine" ofType: @"tiff"];
     // color ramp - a width "n" height 1 image - used for CIColorMap
-    ramppath = [[[NSBundle mainBundle] pathForResource:@"colormap" ofType: @"tiff"] retain];
+    ramppath = [[NSBundle mainBundle] pathForResource:@"colormap" ofType: @"tiff"];
     // mask (grayscale image) used for CIDisintegrateWithMaskTransition
-    maskpath = [[[NSBundle mainBundle] pathForResource:@"mask" ofType: @"tiff"] retain];
-}
-
-- (void)dealloc
-{
-    [texturepath release];
-    [texture release];
-    [shadingemappath release];
-    [shadingemap release];
-    [alphaemappath release];
-    [alphaemap release];
-    [ramppath release];
-    [ramp release];
-    [maskpath release];
-    [mask release];
-    [super dealloc];
+    maskpath = [[NSBundle mainBundle] pathForResource:@"mask" ofType: @"tiff"];
 }
 
 // this procedure allows us to intercept the escape key (for full screen zoom)
@@ -114,8 +99,8 @@
 // load the images only on demand to keep launch time down
 - (CIImage *)defaultTexture
 {
-    if(texture == NULL)
-	texture = [[CIImage imageWithContentsOfURL:[NSURL fileURLWithPath:texturepath]] retain];
+    if (texture == NULL)
+        texture = [CIImage imageWithContentsOfURL:[NSURL fileURLWithPath:texturepath]];
     return texture;
 }
 
@@ -127,7 +112,7 @@
 - (CIImage *)defaultShadingEMap
 {
     if(shadingemap == NULL)
-	shadingemap = [[CIImage imageWithContentsOfURL:[NSURL fileURLWithPath:shadingemappath]] retain];
+	shadingemap = [CIImage imageWithContentsOfURL:[NSURL fileURLWithPath:shadingemappath]];
     return shadingemap;
 }
 
@@ -139,7 +124,7 @@
 - (CIImage *)defaultAlphaEMap
 {
     if(alphaemap == NULL)
-	alphaemap = [[CIImage imageWithContentsOfURL:[NSURL fileURLWithPath:alphaemappath]] retain];
+	alphaemap = [CIImage imageWithContentsOfURL:[NSURL fileURLWithPath:alphaemappath]];
     return alphaemap;
 }
 
@@ -151,7 +136,7 @@
 - (CIImage *)defaultRamp
 {
     if(ramp == NULL)
-	ramp = [[CIImage imageWithContentsOfURL:[NSURL fileURLWithPath:ramppath]] retain];
+	ramp = [CIImage imageWithContentsOfURL:[NSURL fileURLWithPath:ramppath]];
     return ramp;
 }
 
@@ -163,7 +148,7 @@
 - (CIImage *)defaultMask
 {
     if(mask == NULL)
-	mask = [[CIImage imageWithContentsOfURL:[NSURL fileURLWithPath:maskpath]] retain];
+	mask = [CIImage imageWithContentsOfURL:[NSURL fileURLWithPath:maskpath]];
     return mask;
 }
 

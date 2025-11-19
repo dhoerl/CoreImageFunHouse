@@ -88,34 +88,20 @@
 - (void)dealloc
 {
 	[[NSNotificationCenter defaultCenter] removeObserver:self];
-    [_image release];
-    [_contextOptions release];
-    [_context release];
-	
-    [super dealloc];
 }
 
 - (void)setContextOptions:(NSMutableDictionary *)dict
 {
-    [_contextOptions release];
-    _contextOptions = [dict retain];
-	
-    [_context release];
+    _contextOptions = dict;
     _context = nil;
-}
-
-- (CIImage *)image
-{
-    return [[_image retain] autorelease];
 }
 
 - (void)setImage:(CIImage *)image dirtyRect:(CGRect)r
 {
     if (_image != image)
     {
-		[_image release];
-		_image = [image retain];
-		
+        _image = image;
+
 		if (CGRectIsInfinite (r))
 			[self setNeedsDisplay:YES];
 		else
@@ -222,18 +208,16 @@
     CGLLockContext(_cglContext);
     {
 		
-        // Create a new CIContext using the new output color space		
-        [_context release];
-		
+        // Create a new CIContext using the new output color space
 		if(_contextOptions)
 		{
 			[_contextOptions setObject:[[NSUserDefaults standardUserDefaults] objectForKey:@"useSoftwareRenderer"] forKey:kCIContextUseSoftwareRenderer];
 		} else {
-			_contextOptions = [[NSMutableDictionary dictionaryWithObject:[[NSUserDefaults standardUserDefaults] objectForKey:@"useSoftwareRenderer"] forKey:kCIContextUseSoftwareRenderer] retain];
+			_contextOptions = [NSMutableDictionary dictionaryWithObject:[[NSUserDefaults standardUserDefaults] objectForKey:@"useSoftwareRenderer"] forKey:kCIContextUseSoftwareRenderer];
 		}
 		// For 10.6 onwards we use the new API but do not pass in a colorspace as. 
 		// Since the cgl context will be rendered to the display, it is valid to rely on CI to get the colorspace from the context.
-		_context = [[CIContext contextWithCGLContext:_cglContext pixelFormat:[_pf CGLPixelFormatObj] colorSpace:nil options:_contextOptions] retain];    
+		_context = [CIContext contextWithCGLContext:_cglContext pixelFormat:[_pf CGLPixelFormatObj] colorSpace:nil options:_contextOptions];
 	}
     CGLUnlockContext(_cglContext);
     

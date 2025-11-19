@@ -64,17 +64,7 @@
 
 - (void)dealloc
 {
-    // free objects that we don't own but still have to retain
 	[[NSNotificationCenter defaultCenter] removeObserver:self];
-    if (filter != nil)
-        [filter release];
-    if (dict != nil)
-        [dict release];
-    if (key != nil)
-        [key release];
-    [displayView release];
-    [master release];
-    [super dealloc];
 }
 
 // convert slider value to readout value
@@ -435,7 +425,6 @@ static void format_floating_point_number(CGFloat v, NSInteger before, NSInteger 
         [displayView setFilter:filter value: color forKey:key];
         // and set up the undo string based on the filter and key names
         [displayView setActionNameForFilter:filter key:key];
-        [color release];
     }
     // let core image recompute the display
     if (displayView != nil)
@@ -500,7 +489,6 @@ static void format_floating_point_number(CGFloat v, NSInteger before, NSInteger 
         }
     }
     // and release the data structures created herein
-    [bitmapimagerep release];
     data = [NSData dataWithBytes:sourceTextureAddr length:size];
     CGColorSpaceRef cs = CGColorSpaceCreateDeviceRGB();
     // create the CIImage from the bitmap data
@@ -524,7 +512,7 @@ static void format_floating_point_number(CGFloat v, NSInteger before, NSInteger 
         // get the filename of the dragged image (if there is one)
         path = [sender filePath];
         // since we are assuming file path exists for image well images, we read them directly
-        im = [[[CIImage alloc] initWithContentsOfURL:[NSURL fileURLWithPath:path]] autorelease];
+        im = [[CIImage alloc] initWithContentsOfURL:[NSURL fileURLWithPath:path]];
         // update the filter (using undo-compatible glue code)
         [displayView setFilter:filter value:im forKey:key];
         // and set up the undo string based on the filter and key names
@@ -591,7 +579,7 @@ static void format_floating_point_number(CGFloat v, NSInteger before, NSInteger 
         // get the filename of the dragged image (if there is one)
         path = [sender filePath];
         // since we are assuming file path exists for image well images, we read them directly
-        im = [[[CIImage alloc] initWithContentsOfURL:[NSURL fileURLWithPath:path]] autorelease];
+        im = [[CIImage alloc] initWithContentsOfURL:[NSURL fileURLWithPath:path]];
         // and store the image into the image layer
         [master setLayer:[sender tag] image:im andFilename:[path lastPathComponent]];
         [master registerImageLayer:[sender tag] imageFilePath:path];
@@ -658,19 +646,19 @@ static void format_floating_point_number(CGFloat v, NSInteger before, NSInteger 
     // display control points and wing points, etc.
     // make a bitmap context to draw into
     bounds = [displayView bounds];
-    image = [[[NSImage alloc] initWithSize:bounds.size] autorelease];
+    image = [[NSImage alloc] initWithSize:bounds.size];
     sz = [image size];
     [image lockFocus];
-    t = [[[NSAffineTransform alloc] init] autorelease];
+    t = [[NSAffineTransform alloc] init];
     [t scaleBy:[[dict valueForKey:@"scale"] doubleValue]];
     [t set];
     // write to the image
     [ts drawAtPoint:NSMakePoint(0.0, 0.0)];
     // Get a bitmap image representation of the image
-    bitmapimagerep = [[[NSBitmapImageRep alloc]
-      initWithFocusedViewRect:NSMakeRect(0.0, 0.0, sz.width, (CGFloat)sz.height)] autorelease];
+    bitmapimagerep = [[NSBitmapImageRep alloc]
+      initWithFocusedViewRect:NSMakeRect(0.0, 0.0, sz.width, (CGFloat)sz.height)];
     [image unlockFocus];
-    im = [[[CIImage alloc] initWithBitmapImageRep:bitmapimagerep] autorelease];
+    im = [[CIImage alloc] initWithBitmapImageRep:bitmapimagerep];
     [dict setValue:im forKey:@"image"];
 }
 
@@ -817,12 +805,12 @@ static void format_floating_point_number(CGFloat v, NSInteger before, NSInteger 
     }
     
     // save string
-    [displayView setDict:dict value:[[[tv string] copy] autorelease] forKey:@"string"];
+    [displayView setDict:dict value:[[tv string] copy] forKey:@"string"];
     ts = [tv textStorage];
     dattrs = [ts attributesAtIndex:0 effectiveRange:nil];
     // save font attributes
     font = [dattrs valueForKey:NSFontAttributeName];
-    [displayView setDict:dict value:[[[font fontName] copy] autorelease] forKey:@"font"];
+    [displayView setDict:dict value:[[font fontName] copy] forKey:@"font"];
     [displayView setDict:dict value:[NSNumber numberWithDouble:[font pointSize]] forKey:@"pointSize"];
     // save color attributes
     color = [dattrs valueForKey:NSForegroundColorAttributeName];
@@ -1543,8 +1531,7 @@ NSString *unInterCap(NSString *s)
         }
     }
     if (change)
-	s = [[s2 copy] autorelease];
-    [s2 release];
+	s = [s2 copy];
     return s;
 }
 
@@ -1579,8 +1566,7 @@ NSString *unInterCap(NSString *s)
         first = NO;
 		stringwidth = (NSInteger)[label2 sizeWithAttributes:[NSDictionary dictionaryWithObject:font forKey:NSFontNameAttribute]].width;
     }
-    label = [[label2 copy] autorelease];
-    [label2 release];
+    label = [label2 copy];
     return label;
 }
 
@@ -1595,11 +1581,11 @@ NSString *unInterCap(NSString *s)
     NSCell *c;
     char str[32];
     
-    filter = [f retain];
+    filter = f;
     dict = nil;
-    key = [k retain];
-    displayView = [v retain];
-    master = [m retain];
+    key = k;
+    displayView = v;
+    master = m;
     bounds = [self bounds];
     // allocate rectangles here
     tRect = NSMakeRect(0, 0, kSliderLabelWidth, kSliderHeight);
@@ -1710,11 +1696,11 @@ NSString *unInterCap(NSString *s)
     NSCell *c;
     NSDictionary *parameter;
     
-    filter = [f retain];
+    filter = f;
     dict = nil;
-    key = [k retain];
-    displayView = [v retain];
-    master = [m retain];
+    key = k;
+    displayView = v;
+    master = m;
     sRect = NSMakeRect(76, 0, 155, 16);
     // make the check box
     checkBox = [[NSButton alloc] initWithFrame:sRect];
@@ -1753,11 +1739,11 @@ NSString *unInterCap(NSString *s)
     CIColor *color;
     NSDictionary *parameter;
     
-    filter = [f retain];
+    filter = f;
     dict = nil;
-    key = [k retain];
-    displayView = [v retain];
-    master = [m retain];
+    key = k;
+    displayView = v;
+    master = m;
     bounds = [self bounds];
     cRect = NSMakeRect(bounds.size.width - 38, 0, 38, 24);
     tRect = NSMakeRect(0, 0, bounds.size.width - 43, 16);
@@ -1806,11 +1792,11 @@ NSString *unInterCap(NSString *s)
     CIVector *vec;
     NSDictionary *parameter;
     
-    filter = [f retain];
+    filter = f;
     dict = nil;
-    key = [k retain];
-    displayView = [v retain];
-    master = [m retain];
+    key = k;
+    displayView = v;
+    master = m;
     bounds = [self bounds];
     tRect = NSMakeRect(0, 0, 75, 16);
     left = 80;
@@ -1933,11 +1919,11 @@ NSString *unInterCap(NSString *s)
     CIVector *vec;
     NSDictionary *parameter;
     
-    filter = [f retain];
+    filter = f;
     dict = nil;
-    key = [k retain];
-    displayView = [v retain];
-    master = [m retain];
+    key = k;
+    displayView = v;
+    master = m;
     bounds = [self bounds];
     tRect = NSMakeRect(0, 0, 75, 16);
     left = 80;
@@ -2020,12 +2006,12 @@ NSString *unInterCap(NSString *s)
     NSCell *c;
     char str[32];
     CIVector *transform;
-    
-    filter = [f retain];
+
+    filter = f;
     dict = nil;
-    key = [k retain];
-    displayView = [v retain];
-    master = [m retain];
+    key = k;
+    displayView = v;
+    master = m;
     bounds = [self bounds];
     // lay out the widgets
     tScaleRect = NSMakeRect(0, 51, 75, 16);
@@ -2214,9 +2200,9 @@ NSString *unInterCap(NSString *s)
     NSCIImageRep *ir;
     
     ir = [NSCIImageRep imageRepWithCIImage:im];
-    image = [[NSImage allocWithZone:[self zone]] initWithSize:NSMakeSize(r.size.width, r.size.height)];
+    image = [[NSImage alloc] initWithSize:NSMakeSize(r.size.width, r.size.height)];
     [image addRepresentation:ir];
-    return [image autorelease];
+    return image;
 }
 
 // add an image well for an image parameter
@@ -2229,11 +2215,11 @@ NSString *unInterCap(NSString *s)
     NSDictionary *parameter;
     CIImage *im;
     
-    filter = [f retain];
+    filter = f;
     dict = nil;
-    key = [k retain];
-    displayView = [v retain];
-    master = [m retain];
+    key = k;
+    displayView = v;
+    master = m;
     cRect = NSMakeRect(80, 0, 48, 44);
     tRect = NSMakeRect(0, 10, 75, 16);
     pbRect = NSMakeRect(135, 13, 75, 16);
@@ -2330,8 +2316,8 @@ NSString *unInterCap(NSString *s)
     filter = nil;
     dict = nil;
     key = nil;
-    displayView = [v retain];
-    master = [m retain];
+    displayView = v;
+    master = m;
     cRect = NSMakeRect(80, 0, 48, 44);
     pbRect = NSMakeRect(135, 13, 75, 16);
     // create the image view
@@ -2410,15 +2396,15 @@ NSString *unInterCap(NSString *s)
     NSScrollView *scrollView;
     
     filter = nil;
-    dict = [d retain];
-    key = [k retain];
-    displayView = [v retain];
-    master = [m retain];
+    dict = d;
+    key = k;
+    displayView = v;
+    master = m;
     bounds = [self bounds];
     tRect = NSInsetRect(bounds, 6.0, 6.0);
     tRect.size.width -= 14;
     // create the scroll view
-    scrollView = [[NSScrollView allocWithZone:[self zone]] initWithFrame:tRect];
+    scrollView = [[NSScrollView alloc] initWithFrame:tRect];
     [scrollView setBorderType:NSBezelBorder];
     [scrollView setAutohidesScrollers:YES];
     [scrollView setHasVerticalScroller:YES];
@@ -2427,12 +2413,12 @@ NSString *unInterCap(NSString *s)
     [[scrollView verticalScroller] setControlSize:NSSmallControlSize];
     [[scrollView contentView] setAutoresizesSubviews:YES];
     [self addSubview:scrollView];
-    [scrollView release];
+
     // Set frame for content area of scroll view
     tRect.origin = NSMakePoint(0.0, 0.0);
     tRect.size = [scrollView contentSize];
     // create the text view and pop it into the scroll view
-    textView = [[NSTextView allocWithZone:[self zone]] initWithFrame:tRect];
+    textView = [[NSTextView alloc] initWithFrame:tRect];
     // set up the properties for the text from the dictionary
     if ([d valueForKey:@"font"] != nil)
     {
@@ -2456,7 +2442,6 @@ NSString *unInterCap(NSString *s)
     [textView setString:[d valueForKey:@"string"]];
     [textView setSelectedRange:NSMakeRange(0, 6)];
     [scrollView setDocumentView:textView];
-    [textView release];
     // retain the text storage from the text view in the dictionary
     ts = [textView textStorage];
     [d setValue:ts forKey:@"textStorage"];
@@ -2473,10 +2458,10 @@ NSString *unInterCap(NSString *s)
     char str[32];
     
     filter = nil;
-    dict = [d retain];
-    key = [k retain];
-    displayView = [v retain];
-    master = [m retain];
+    dict = d;
+    key = k;
+    displayView = v;
+    master = m;
     bounds = [self bounds];
     tRect = NSMakeRect(0, 0, kSliderLabelWidth, kSliderHeight);
     sRect = NSMakeRect(kSliderLabelWidth + kSliderGap, 0, bounds.size.width - 3*kSliderGap
@@ -2554,9 +2539,8 @@ NSString *unInterCap(NSString *s)
     NSArray *files;
     
     pboard = [sender draggingPasteboard];
-    [_filePath release];
     _filePath = nil;
-    if ([pboard availableTypeFromArray:[NSArray arrayWithObject:NSFilenamesPboardType]])
+    if ([pboard availableTypeFromArray:@[NSFilenamesPboardType]])
     {
         files = [pboard propertyListForType:NSFilenamesPboardType];
         if ([files count] > 0)

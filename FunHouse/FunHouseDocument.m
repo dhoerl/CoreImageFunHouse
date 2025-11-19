@@ -89,19 +89,16 @@
 {
     [[NSNotificationCenter defaultCenter] removeObserver:self];
     // release the effect stack for the document here
-    [effectStack release];
     if (colorspace)
         CFRelease(colorspace);
-    [super dealloc];
 }
 
 // this sets up our (non-full-screen) window controller
 - (void)makeWindowControllers
 {
     // create the window controller
-    windowController = [[FunHouseWindowController allocWithZone:[self zone]] init];
+    windowController = [[FunHouseWindowController alloc] init];
     [self addWindowController:windowController];
-    [windowController release];
 }
 
 + (NSArray *)writableTypes
@@ -189,12 +186,12 @@
     if (colorspace == nil) {
         CGColorSpaceRef cs = CGColorSpaceCreateWithName(kCGColorSpaceGenericRGB);
         context = [CIContext contextWithCGContext:[[[[con coreImageView] window] graphicsContext] graphicsPort]
-                                          options:[NSDictionary dictionaryWithObjectsAndKeys:(id)cs, kCIContextOutputColorSpace, nil]];
+                                          options:[NSDictionary dictionaryWithObjectsAndKeys:(__bridge id)cs, kCIContextOutputColorSpace, nil]];
         CGColorSpaceRelease(cs);
     }
     else {
         context = [CIContext contextWithCGContext:[[[[con coreImageView] window] graphicsContext] graphicsPort]
-                                          options:[NSDictionary dictionaryWithObjectsAndKeys:(id)colorspace, kCIContextOutputColorSpace, nil]];
+                                          options:[NSDictionary dictionaryWithObjectsAndKeys:(__bridge id)colorspace, kCIContextOutputColorSpace, nil]];
     }
     CGImageRef iref = [context createCGImage:[effectStack coreImageResultForRect:r] fromRect:CGRectMake(r.origin.x, r.origin.y, r.size.width, r.size.height)];
     // add image to the ImageIO destination (specify the image we want to save)
@@ -216,8 +213,8 @@
     if (outError)
         *outError = nil;
     // return the data
-    d = (NSData *)data;
-    return [d autorelease];
+    d = (__bridge NSData *)data;
+    return d;
 }
 
 - (NSData *)tiffData:(NSError **)outError
@@ -263,12 +260,12 @@
     if (colorspace == nil) {
         CGColorSpaceRef cs = CGColorSpaceCreateWithName(kCGColorSpaceGenericRGB);
         context = [CIContext contextWithCGContext:[[[[con coreImageView] window] graphicsContext] graphicsPort]
-                                          options:[NSDictionary dictionaryWithObjectsAndKeys:(id)cs, kCIContextOutputColorSpace, nil]];
+                                          options:[NSDictionary dictionaryWithObjectsAndKeys:(__bridge id)cs, kCIContextOutputColorSpace, nil]];
         CGColorSpaceRelease(cs);
     }
     else {
         context = [CIContext contextWithCGContext:[[[[con coreImageView] window] graphicsContext] graphicsPort]
-                                          options:[NSDictionary dictionaryWithObjectsAndKeys:(id)colorspace, kCIContextOutputColorSpace, nil]];
+                                          options:[NSDictionary dictionaryWithObjectsAndKeys:(__bridge id)colorspace, kCIContextOutputColorSpace, nil]];
     }
     CGImageRef iref = [context createCGImage:[effectStack coreImageResultForRect:r] fromRect:CGRectMake(r.origin.x, r.origin.y, r.size.width, r.size.height)];
     // add image to the ImageIO destination (specify the image we want to save)
@@ -292,16 +289,16 @@
     if (outError)
         *outError = nil;
     // return the data
-    d = (NSData *)data;
-    return [d autorelease];
+    d = (__bridge NSData *)data;
+    return d;
 }
 
 // convert a CIImage to a CGImageRef - uses the context of the document's view
 - (CGImageRef)CIImageToCGImage:(CIImage *)im usingRect:(CGRect)r
 {
     FunHouseWindowController *con = [[self windowControllers] objectAtIndex:0];
-    CGImageRef cgImage = [[[con coreImageView] context] createCGImage:im fromRect:r];
-    return (CGImageRef)[(id)cgImage autorelease];;
+    CGImageRef cgImage = [con.coreImageView.context createCGImage:im fromRect:r];
+    return cgImage;
 }
     
 - (NSPrintOperation *)printOperationWithSettings:(NSDictionary *)printSettings error:(NSError **)outError
@@ -574,11 +571,9 @@
     if (xmlData == nil)
     {
         NSLog(@"%@", error);
-        [error release];
         if (outError)
             *outError = [NSError errorWithDomain:@"fun house errors" code:-10106
                                         userInfo:[NSDictionary dictionaryWithObjectsAndKeys:@"problems writing xml file for preset save", NSLocalizedDescriptionKey, nil]];
-        [fw release];
         return nil;
     }
     // add the XML file (in NSData form) to the file wrapper
@@ -586,16 +581,16 @@
     if (outError)
         *outError = nil;
     // and the file wrapper's ready to store onto disk
-    return [fw autorelease];
+    return fw;
 }
 
 // this is the high-level method that produces the NSFileWrapper for JPEG, TIFF, or fun house preset files
 - (NSFileWrapper *)fileWrapperOfType:(NSString *)typeName error:(NSError **)outError
 {
     if ([typeName isEqualToString:@"JPEG File"])
-        return [[[NSFileWrapper alloc] initRegularFileWithContents:[self jpegData:outError]] autorelease];
+        return [[NSFileWrapper alloc] initRegularFileWithContents:[self jpegData:outError]];
     if ([typeName isEqualToString:@"TIFF File"])
-        return [[[NSFileWrapper alloc] initRegularFileWithContents:[self tiffData:outError]] autorelease];
+        return [[NSFileWrapper alloc] initRegularFileWithContents:[self tiffData:outError]];
     if ([typeName isEqualToString:@"Fun House Preset"])
         return [self fileWrapperForPreset:outError];
     if (outError)
@@ -691,7 +686,6 @@
         {
         *outError = [NSError errorWithDomain:@"fun house errors" code:-10105
           userInfo:[NSDictionary dictionaryWithObjectsAndKeys:error, NSLocalizedDescriptionKey, nil]];
-        [error release];
         return NO;
         }
     // now unpack file dictionary
@@ -716,7 +710,7 @@
             offset = NSMakePoint([[layerdict valueForKey:@"offsetX"] doubleValue], [[layerdict valueForKey:@"offsetY"] doubleValue]);
             file = [layerdict valueForKey:@"file"];
             path = [[[[self fileURL] path] stringByAppendingString:@"/"] stringByAppendingString:file];
-            im = [[[CIImage alloc] initWithContentsOfURL:[NSURL fileURLWithPath:path]] autorelease];
+            im = [[CIImage alloc] initWithContentsOfURL:[NSURL fileURLWithPath:path]];
             // and insert the image layer into the effect stack
             [effectStack insertImageLayer:im withFilename:file atIndex:i];
             [effectStack setImageLayer:i offset:offset];
@@ -784,7 +778,7 @@
                     // filter image parameter
                     file = [values valueForKey:key];
                     path = [[[[self fileURL] path] stringByAppendingString:@"/"] stringByAppendingString:file];
-                    im = [[[CIImage alloc] initWithContentsOfURL:[NSURL fileURLWithPath:path]] autorelease];
+                    im = [[CIImage alloc] initWithContentsOfURL:[NSURL fileURLWithPath:path]];
                     // and set up the filter's image value
                     [filter setValue:im forKey:key];
                     [effectStack setFilterLayer:i imageFilePathValue:[[[[self fileURL] path] stringByAppendingString:@"/"] stringByAppendingString:file]
@@ -832,13 +826,12 @@
     {
         // zoom into full screen mode
         // add a new window controller, and thus a new window
-        fullScreenController = [[FunHouseWindowController allocWithZone:[self zone]] initFullScreen];
+        fullScreenController = [[FunHouseWindowController alloc] initFullScreen];
         [self addWindowController:fullScreenController];
         // set the window up properly to be a full screen window (check out FunHouseWindowController.m)
         [fullScreenController prepFullScreenWindow];
         v = [fullScreenController coreImageView];
         // release it now that it's owned by the document
-        [fullScreenController release];
         fullScreen = YES;
         // point the effect stack controller to the right view in the right window
         [[EffectStackController sharedEffectStackController] setCoreImageView:v];

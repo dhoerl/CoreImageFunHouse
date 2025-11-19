@@ -140,7 +140,6 @@
 - (IBAction)showPreferences:(id)sender
 {
     if (_preferencesWindowController) {
-        [_preferencesWindowController release];
         _preferencesWindowController = nil;
     }
 	_preferencesWindowController = [[NSWindowController alloc] initWithWindowNibName:@"Preferences"];
@@ -174,19 +173,19 @@
 // handle the zoom to full screen menu item action
 - (IBAction)zoomToFullScreenAction:(id)sender
 {
-    [[[NSDocumentController sharedDocumentController] currentDocument] zoomToFullScreenAction:sender];
+    [(id)NSDocumentController.sharedDocumentController.currentDocument zoomToFullScreenAction:sender];
 }
 
 // handle the undo menu item action
 - (IBAction)undo:(id)sender
 {
-    [[[NSDocumentController sharedDocumentController] currentDocument] undo];
+    [(id)NSDocumentController.sharedDocumentController.currentDocument undo];
 }
 
 // handle the redo menu item action
 - (IBAction)redo:(id)sender
 {
-    [[[NSDocumentController sharedDocumentController] currentDocument] redo];
+    [(id)NSDocumentController.sharedDocumentController.currentDocument redo];
 }
 
 // validate (enable/disable) undo and redo menu items

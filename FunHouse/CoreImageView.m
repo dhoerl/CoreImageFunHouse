@@ -82,11 +82,6 @@
     viewTransformOffsetY = 0.0;
 }
 
-- (void)dealloc
-{
-    [super dealloc];
-}
-
 /*
     View properties
 */
@@ -139,11 +134,10 @@
     id oldValue;
     
     d = (FunHouseDocument *)[controller document];
-    oldValue = [[f valueForKey:key] retain];
+    oldValue = [f valueForKey:key];
     [f setValue:val forKey:key];
     // this is the special way the undo manager saves old object values so it can undo properly
     [[[d undoManager] prepareWithInvocationTarget:self] setFilter:f value:oldValue forKey:key];
-    [oldValue release];
 }
 
 // call this to get the undo string (shown in the edit menu)
@@ -161,10 +155,9 @@
     id oldValue;
     
     d = (FunHouseDocument *)[controller document];
-    oldValue = [[dict valueForKey:key] retain];
+    oldValue = [dict valueForKey:key];
     [dict setValue:val forKey:key];
     [[[d undoManager] prepareWithInvocationTarget:self] setDict:dict value:oldValue forKey:key];
-    [oldValue release];
 }
 
 // call this to set the undo string for a filter
@@ -225,6 +218,9 @@
 // all items are "shadowed"
 - (void)drawPoint:(NSPoint)pt label:(NSString *)str intoContext:(CGContextRef)cg
 {
+    if (cg == nil)
+        return;
+
     CGRect R;
     CGFloat size;    
     pt.x = pt.x * viewTransformScale + viewTransformOffsetX;
@@ -257,7 +253,7 @@
     CGContextSetRGBFillColor(cg, 0.0, 0.0, 0.0, 1.0);
     if (!movingNow)
     {
- 		NSGraphicsContext *graphicsContext = [NSGraphicsContext graphicsContextWithGraphicsPort:cg flipped:NO];
+        NSGraphicsContext *graphicsContext = [NSGraphicsContext graphicsContextWithCGContext:cg flipped:NO];
         assert(graphicsContext);
     
 		[NSGraphicsContext setCurrentContext:graphicsContext];
@@ -409,7 +405,7 @@ bounds = origRect;
             [self drawPoint:pt label:@"text origin" intoContext:cg];
         }
     }
-    image = [[[CIImage alloc] initWithCGLayer:layer] autorelease];
+    image = [[CIImage alloc] initWithCGLayer:layer];
     CGLayerRelease(layer);
 NSLog(@"J1 %@", NSStringFromRect(image.extent));
 NSLog(@"J2 %@", NSStringFromRect(im.extent));
@@ -499,46 +495,46 @@ NSLog(@"E4 %@", NSStringFromRect(res.extent));
 
     NSGraphicsContext *printingContext = [NSGraphicsContext currentContext];
 
-    NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
-    // compute the core image graph for the view (based on the effect stack)
-    im = [self coreImageResult];
-    // display origin handles when the mouse is inside the view, and when a modal vwindow isn't present...
-    if (displayingPoints && [NSApp modalWindow] == nil) {
-        im = [self drawPoints:im inCIContext:context];
+    @autoreleasepool {
+        // compute the core image graph for the view (based on the effect stack)
+        im = [self coreImageResult];
+        // display origin handles when the mouse is inside the view, and when a modal vwindow isn't present...
+        if (displayingPoints && [NSApp modalWindow] == nil) {
+            im = [self drawPoints:im inCIContext:context];
+        }
+        // if successful, draw the image
+        if (im != nil && context != nil)
+        {
+            if (!printingContext)
+            {
+                NSLog(@"IM EXTENT %@", NSStringFromRect(im.extent));
+                NSLog(@"IM DEF EXTENT %@", NSStringFromRect(im.definition.extent));
+                NSLog(@"CI DRAWRECT %@", NSStringFromRect(r));
+                //cgr = CGRectMake(0, 0, 1200, 900);
+                CGRect fromRect = im.extent;
+                CGRect inRect = CGRectMake((cgr.size.width - fromRect.size.width)/2, (cgr.size.height - fromRect.size.height)/2, fromRect.size.width, fromRect.size.height);
+
+                NSLog(@"from: %@ to %@ bounds %@", NSStringFromRect(fromRect), NSStringFromRect(inRect), NSStringFromRect([self bounds]));
+                [context drawImage:im inRect:inRect fromRect:fromRect];
+            }
+            else
+            {
+                CGImageRef cgImage;
+
+                cgImage = [context createCGImage:im fromRect:cgr format:kCIFormatRGBA16 colorSpace:nil];
+
+                if (cgImage != NULL)
+                {
+                    CGContextDrawImage ([printingContext CGContext], cgr, cgImage);
+                    CGImageRelease (cgImage);
+                }
+            }
+        }
     }
-    // if successful, draw the image
-    if (im != nil && context != nil)
-    {
-	if (!printingContext)
-	{
-NSLog(@"IM EXTENT %@", NSStringFromRect(im.extent));
-NSLog(@"IM DEF EXTENT %@", NSStringFromRect(im.definition.extent));
-NSLog(@"CI DRAWRECT %@", NSStringFromRect(r));
-//cgr = CGRectMake(0, 0, 1200, 900);
-        CGRect fromRect = im.extent;
-        CGRect inRect = CGRectMake((cgr.size.width - fromRect.size.width)/2, (cgr.size.height - fromRect.size.height)/2, fromRect.size.width, fromRect.size.height);
-
-        NSLog(@"from: %@ to %@ bounds %@", NSStringFromRect(fromRect), NSStringFromRect(inRect), NSStringFromRect([self bounds]));
-        [context drawImage:im inRect:inRect fromRect:fromRect];
-	}
-	else
-	{
-	    CGImageRef cgImage;
-
-	    cgImage = [context createCGImage:im fromRect:cgr format:kCIFormatRGBA16 colorSpace:nil];
-
-	    if (cgImage != NULL)
-	    {
-            CGContextDrawImage ([printingContext CGContext], cgr, cgImage);
-            CGImageRelease (cgImage);
-	    }
-	}
-    }
-    [pool release];
 }
 
 /*
-    Event handling
+ Event handling
 */
 
 // when entering the view, turn on origin handle display
@@ -770,7 +766,7 @@ NSLog(@"CI DRAWRECT %@", NSStringFromRect(r));
     else if (parmMode == pmTextOffset)
         savedActionName = @"Text Move";
     else if (parmMode!= pmNone)
-        savedActionName = [[self actionNameForFilter:f key:parmKey] retain];
+        savedActionName = [self actionNameForFilter:f key:parmKey];
     [self setNeedsDisplay:YES];
 }
 
@@ -905,8 +901,6 @@ NSLog(@"CI DRAWRECT %@", NSStringFromRect(r));
     [[d undoManager] setActionName:savedActionName];
     // explicitly group all the changes during the entire mouse move
     [[d undoManager] endUndoGrouping];
-    if (savedActionName != nil)
-        [savedActionName release];
     [self setNeedsDisplay:YES];
 }
 

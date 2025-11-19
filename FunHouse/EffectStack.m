@@ -60,13 +60,6 @@
     return self;
 }
 
-- (void)dealloc
-{
-    [baseImage release];
-    [layers release];
-    [super dealloc];
-}
-
 // insert a filter layer into the layers array
 - (void)insertFilterLayer:(CIFilter *)filter atIndex:(NSInteger)index
 {
@@ -732,7 +725,7 @@
         S.m22 = [[v valueForKey:[key stringByAppendingString:@"_m22"]] doubleValue];
         S.tX = [[v valueForKey:[key stringByAppendingString:@"_tX"]] doubleValue];
         S.tY = [[v valueForKey:[key stringByAppendingString:@"_tY"]] doubleValue];
-        t = [[[NSAffineTransform alloc] init] autorelease];
+        t = [[NSAffineTransform alloc] init];
         [t setTransformStruct:S];
         return t;
     }

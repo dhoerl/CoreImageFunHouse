@@ -270,7 +270,7 @@
     // set text label to 9 point
     c = [filterNameField cell];
     // determine if we need to ellipsize
-    name = [ParameterView ellipsizeField:[c drawingRectForBounds:[filterNameField bounds]].size.width font:[c font] string:[name autorelease]];
+    name = [ParameterView ellipsizeField:[c drawingRectForBounds:[filterNameField bounds]].size.width font:[c font] string:name];
     [filterNameField setStringValue:name];
     [filterNameField setEditable:NO];
     [filterNameField setBezeled:NO];
@@ -336,7 +336,6 @@
     pView = [[ParameterView alloc] initWithFrame:pRect];
     [pView addSliderForFilter:f key:k displayView:v master:master];
     [self addSubview:pView]; //"self" now retains pView
-    [pView release];
     [pView setAutoresizingMask:NSViewWidthSizable|NSViewMinYMargin];
     controlTopPosition -= kSliderVerticalAdvance + kVerticalGap;
     lastControlType = ctSlider;
@@ -360,7 +359,6 @@
     pView = [[ParameterView alloc] initWithFrame:pRect];
     [pView addCheckBoxForFilter:f key:k displayView:v master:master];
     [self addSubview:pView]; //"self" now retains pView
-    [pView release];
     [pView setAutoresizingMask:NSViewMaxXMargin|NSViewMinYMargin];
     controlTopPosition -= 17;
     lastControlType = ctCheckBox;
@@ -413,7 +411,6 @@
     pView = [[ParameterView alloc] initWithFrame:pRect];
     [pView addColorWellForFilter:f key:k displayView:v master:master];
     [self addSubview:pView]; //"self" now retains pView
-    [pView release];
     if (colorWellOffset == controlLeftPosition)
         [pView setAutoresizingMask:NSViewWidthSizable|NSViewMaxXMargin|NSViewMinYMargin];
     else
@@ -440,7 +437,6 @@
     pView = [[ParameterView alloc] initWithFrame:pRect];
     [pView addImageWellForFilter:f key:k displayView:v master:master];
     [self addSubview:pView]; //"self" now retains pView
-    [pView release];
     [pView setAutoresizingMask:NSViewWidthSizable|NSViewMaxXMargin|NSViewMinYMargin];
     controlTopPosition -= 48;
     lastControlType = ctImageWell;
@@ -464,7 +460,6 @@
     pView = [[ParameterView alloc] initWithFrame:pRect];
     [pView addTransformForFilter:f key:k displayView:v master:master];
     [self addSubview:pView]; //"self" now retains pView
-    [pView release];
     [pView setAutoresizingMask:NSViewWidthSizable|NSViewMinYMargin];
     controlTopPosition -= 68;
     lastControlType = ctTransform;
@@ -488,7 +483,6 @@
     pView = [[ParameterView alloc] initWithFrame:pRect];
     [pView addVectorForFilter:f key:k displayView:v master:master];
     [self addSubview:pView]; //"self" now retains pView
-    [pView release];
     [pView setAutoresizingMask:NSViewWidthSizable|NSViewMinYMargin];
     controlTopPosition -= 17;
     lastControlType = ctVector;
@@ -512,7 +506,6 @@
     pView = [[ParameterView alloc] initWithFrame:pRect];
     [pView addOffsetForFilter:f key:k displayView:v master:master];
     [self addSubview:pView]; //"self" now retains pView
-    [pView release];
     [pView setAutoresizingMask:NSViewWidthSizable|NSViewMinYMargin];
     controlTopPosition -= 17;
     lastControlType = ctOffset;
@@ -536,7 +529,6 @@
     pView = [[ParameterView alloc] initWithFrame:pRect];
     [pView addImageWellForImage:im tag:index displayView:v master:master];
     [self addSubview:pView]; //"self" now retains pView
-    [pView release];
     [pView setAutoresizingMask:NSViewWidthSizable|NSViewMaxXMargin|NSViewMinYMargin];
     controlTopPosition -= 48;
     lastControlType = ctImageWell;
@@ -644,7 +636,6 @@
     pView = [[ParameterView alloc] initWithFrame:pRect];
     [pView addTextViewForString:d key:key displayView:v master:master];
     [self addSubview:pView]; //"self" now retains pView
-    [pView release];
     [pView setAutoresizingMask:NSViewWidthSizable|NSViewMinYMargin];
     controlTopPosition -= 88;
     lastControlType = ctTextView;
@@ -668,7 +659,6 @@
     pView = [[ParameterView alloc] initWithFrame:pRect];
     [pView addSliderForText:d key:key lo:lo hi:hi displayView:v master:master];
     [self addSubview:pView]; //"self" now retains pView
-    [pView release];
     [pView setAutoresizingMask:NSViewWidthSizable|NSViewMinYMargin];
     controlTopPosition -= kSliderVerticalAdvance + kVerticalGap;
     lastControlType = ctSlider;
