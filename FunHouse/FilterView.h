@@ -68,14 +68,8 @@ typedef NS_ENUM(NSInteger, ControlType) {
 };
 
 @interface EffectStackBox : NSBox   // subclassed
-{
-    CIFilter *filter;
-    EffectStackController *master;
-}
-
-- (void)drawRect:(NSRect)r;
-- (void)setFilter:(CIFilter *)f;
-- (void)setMaster:(EffectStackController *)m;
+@property (nonatomic) CIFilter *filter;
+@property (nonatomic) EffectStackController *master;
 @end
 
 @interface FilterView : EffectStackBox

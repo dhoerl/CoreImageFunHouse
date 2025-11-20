@@ -675,7 +675,7 @@ private let inspectorTopY = 36
         frame.size.height -= CGFloat(inspectorTopY)
         let fv = FilterView(frame: frame)
 
-        fv.setFilter(f)
+        fv.filter = f
         fv.isHidden = true
         view.addSubview(fv)
 
@@ -683,7 +683,7 @@ private let inspectorTopY = 36
         fv.autoresizingMask = [.width, .minYMargin]
 //        fv.borderType = NSBorderType.grooveBorder
         fv.boxType = NSBox.BoxType.primary
-        fv.setMaster(self)
+        fv.master = self
         fv.setTag(index)
         // first compute size of box with all the controls
         fv.tryFilterHeader(f)
@@ -820,14 +820,14 @@ private let inspectorTopY = 36
         frame.origin.x += 6
         frame.size.height -= CGFloat(inspectorTopY)
         let fv = FilterView(frame: frame)
-        fv.setFilter(nil)
+        fv.filter = nil
         fv.isHidden = true
         view.addSubview(fv)
         fv.titlePosition = NSBox.TitlePosition.noTitle
         fv.autoresizingMask = [.width, .minYMargin]
 //        fv.borderType = NSBorderType.grooveBorder
         fv.boxType = NSBox.BoxType.primary
-        fv.setMaster(self)
+        fv.master = self
         fv.setTag(index)
         // first compute size of box with all the controls
         fv.tryImageHeader(im)
@@ -850,7 +850,7 @@ private let inspectorTopY = 36
         frame.origin.x += 6
         frame.size.height -= CGFloat(inspectorTopY)
         let fv = FilterView(frame: frame)
-        fv.setFilter(nil)
+        fv.filter = nil
         fv.isHidden = true
         window?.contentView?.addSubview(fv)
 
@@ -858,7 +858,7 @@ private let inspectorTopY = 36
         fv.autoresizingMask = [.width, .minYMargin]
 //        fv.borderType = NSBorderType.grooveBorder
         fv.boxType = NSBox.BoxType.primary
-        fv.setMaster(self)
+        fv.master = self
         fv.setTag(index)
         // first compute size of box with all the controls
         fv.tryTextHeader(string)

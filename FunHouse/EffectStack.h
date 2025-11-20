@@ -51,13 +51,7 @@
 @class CoreImageView;
 
 @interface EffectStack : NSView
-{
-    CIImage *baseImage;         // a pointer to the base image in the array (generally layers[0].image
-    NSMutableArray *layers;     // effect stack filter, image, text layers in an array
-}
 
-// designated init routine
-- (id)init;
 // effect stack layer operationsd
 - (void)insertFilterLayer:(CIFilter *)filter atIndex:(NSInteger)index;
 - (void)insertImageLayer:(CIImage *)image withFilename:(NSString *)filename atIndex:(NSInteger)index;

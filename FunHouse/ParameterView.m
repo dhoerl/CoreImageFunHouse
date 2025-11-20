@@ -56,12 +56,6 @@
 
 @implementation ParameterView
 
-- (id)initWithFrame:(NSRect)frame 
-{
-    self = [super initWithFrame:frame];
-    return self;
-}
-
 - (void)dealloc
 {
 	[[NSNotificationCenter defaultCenter] removeObserver:self];
@@ -2525,18 +2519,6 @@ NSString *unInterCap(NSString *s)
 
 @implementation FunHouseImageView
 
-// useful for image views set up explicitly
-- (void)setFilePath:(NSString *)path
-{
-    _filePath = [path copy];
-}
-
-// return the file path we have retained
-- (NSString *)filePath
-{
-    return _filePath;
-}
-
 // at the end of a drag operation (of an image into this image view) we interrogate the dragging pasteboard
 // and pull out the filename of the image being dragged
 - (void)concludeDragOperation:(id<NSDraggingInfo>)sender
@@ -2546,16 +2528,16 @@ NSString *unInterCap(NSString *s)
     
     pboard = [sender draggingPasteboard];
     _filePath = nil;
-    if ([pboard availableTypeFromArray:@[NSFilenamesPboardType]])
+    if ([pboard availableTypeFromArray:@[NSPasteboardTypeFileURL]])
     {
-        files = [pboard propertyListForType:NSFilenamesPboardType];
+        files = [pboard propertyListForType:NSPasteboardTypeFileURL];
         if ([files count] > 0)
             _filePath = [[files objectAtIndex:0] copy];
     }
     [super concludeDragOperation:sender];
 }
 
-- (NSUInteger)draggingSourceOperationMaskForLocal:(BOOL)isLocal
+- (NSDragOperation)draggingSourceOperationMaskForLocal:(BOOL)isLocal
 {
     return NSDragOperationCopy;
 }
@@ -2570,8 +2552,8 @@ NSString *unInterCap(NSString *s)
     // write data to the pasteboard
     fileList = [NSArray arrayWithObjects:[self filePath], nil];
     pboard = [NSPasteboard pasteboardWithName:NSPasteboardNameDrag];
-    [pboard declareTypes:[NSArray arrayWithObject:NSFilenamesPboardType] owner:nil];
-    [pboard setPropertyList:fileList forType:NSFilenamesPboardType];
+    [pboard declareTypes:[NSArray arrayWithObject:NSPasteboardTypeFileURL] owner:nil];
+    [pboard setPropertyList:fileList forType:NSPasteboardTypeFileURL];
     // start the drag operation
     dragImage = [[NSWorkspace sharedWorkspace] iconForFile:[self filePath]];
     dragPosition = [self convertPoint:[theEvent locationInWindow] fromView:nil];

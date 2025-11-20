@@ -53,20 +53,47 @@
 
 #define originHandleSize 4.0
 
+// these are the possible item types that get moved
+// within a mouseDown mouseDragged mouseUp loop
+enum
+    {
+    pmNone = 0,
+    pmPoint,            // moving a filter point (example: the inputCenter parameter to CIBumpDistortion)
+    pmTopLeft,          // moving the top left point of a filter rectangle (example: the inputRectangle parameter to CICrop)
+    pmBottomLeft,       // moving the bottom left point of a filter rectangle (example: the inputRectangle parameter to CICrop)
+    pmTopRight,         // moving the top right point of a filter rectangle (example: the inputRectangle parameter to CICrop)
+    pmBottomRight,      // moving the bottom right point of a filter rectangle (example: the inputRectangle parameter to CICrop)
+    pmImageOffset,      // moving an image layer's offset
+    pmTextOffset,       // moving a text layer's origin
+    pmTransformOffset,  // moving the offset of a filter's affine transform parameter
+    pmSpotLight,        // moving a CISpotLight position parameter
+    pm3DPoint,          // moving the XY components of a filter 3D position parameter
+    };
+
 @implementation CoreImageView
+{
+    BOOL initialized;
+    NSBundle *bundle;
+    FunHouseWindowController *controller;
+    // these fields are for mouse movement - they're set up in mouseDown, and used in mouseDragged and mouseUp
+    NSInteger parmIndex;
+    NSString *parmKey;
+    NSInteger parmMode;
+    NSString *savedActionName;
+    BOOL movingNow;
+    // this onee is used to indicate that the filter, image, and text layer origin handles are to be displayed
+    BOOL displayingPoints;
+    // the tracking rectangle is set up so mouseEntered and mouseExited events will be generated
+    NSTrackingRectTag lastTrack;
+    // view transform
+    CGFloat viewTransformScale;
+    CGFloat viewTransformOffsetX;
+    CGFloat viewTransformOffsetY;
+}
 
 /*
     Initialzation
 */
-    
-- (id)initWithFrame: (NSRect)frameRect
-{
-    if((self = [super initWithFrame:frameRect]) != nil)
-    {
-    }
-
-    return self;
-}
 
 - (void)awakeFromNib
 {
@@ -476,13 +503,10 @@ NSLog(@"E4 %@", NSStringFromRect(res.extent));
 
 - (void)drawRect:(NSRect)r inCIContext:(CIContext *)context
 {
-    CGRect cgr;
-    CIImage *im;
-
-    cgr = CGRectMake(r.origin.x, r.origin.y, r.size.width, r.size.height);
     // note: surround a core image evaluation with its own autorelease pool to prevent a huge amount of buildup
     // during a slider drag, for instance.
 
+    CIImage *im;
     NSGraphicsContext *printingContext = [NSGraphicsContext currentContext];
 
     @autoreleasepool {
@@ -497,25 +521,31 @@ NSLog(@"E4 %@", NSStringFromRect(res.extent));
         {
             if (!printingContext)
             {
+                CGFloat displayDensity = self.window.backingScaleFactor;
+                im = [im imageByApplyingTransform:CGAffineTransformMakeScale(displayDensity, displayDensity)];
+
                 NSLog(@"IM EXTENT %@", NSStringFromRect(im.extent));
                 NSLog(@"IM DEF EXTENT %@", NSStringFromRect(im.definition.extent));
                 NSLog(@"CI DRAWRECT %@", NSStringFromRect(r));
-                //cgr = CGRectMake(0, 0, 1200, 900);
-                CGRect fromRect = im.extent;
-                CGRect inRect = CGRectMake((cgr.size.width - fromRect.size.width)/2, (cgr.size.height - fromRect.size.height)/2, fromRect.size.width, fromRect.size.height);
+                
+                // Account for backing scale factor (Retina displays)
+                CGFloat backingScale = [self.window backingScaleFactor];
+                
+                // Scale the drawing rectangle to backing coordinates
+                CGRect backingRect = CGRectMake(r.origin.x * backingScale, r.origin.y * backingScale, r.size.width * backingScale, r.size.height * backingScale);
 
-                NSLog(@"from: %@ to %@ bounds %@", NSStringFromRect(fromRect), NSStringFromRect(inRect), NSStringFromRect([self bounds]));
-                [context drawImage:im inRect:inRect fromRect:fromRect];
+                NSLog(@"from: %@ to %@ bounds %@", NSStringFromRect(im.extent), NSStringFromRect(backingRect), NSStringFromRect([self bounds]));
+                [context drawImage:im inRect:backingRect fromRect:im.extent];
             }
             else
             {
                 CGImageRef cgImage;
 
-                cgImage = [context createCGImage:im fromRect:cgr format:kCIFormatRGBA16 colorSpace:nil];
+                cgImage = [context createCGImage:im fromRect:r format:kCIFormatRGBA16 colorSpace:nil];
 
                 if (cgImage != NULL)
                 {
-                    CGContextDrawImage ([printingContext CGContext], cgr, cgImage);
+                    CGContextDrawImage ([printingContext CGContext], r, cgImage);
                     CGImageRelease (cgImage);
                 }
             }

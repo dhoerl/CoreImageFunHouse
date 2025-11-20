@@ -49,6 +49,10 @@
 #import "CoreImageView.h"
 
 @implementation EffectStack
+{
+    CIImage *baseImage;         // a pointer to the base image in the array (generally layers[0].image
+    NSMutableArray *layers;     // effect stack filter, image, text layers in an array
+}
 
 - (id)init
 {

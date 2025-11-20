@@ -58,8 +58,14 @@
 
 @end
 
-
 @implementation SampleCIView
+{
+    NSRect                _lastBounds;
+
+    CGLContextObj        _cglContext;
+    NSOpenGLPixelFormat *_pf;
+    CGDirectDisplayID    _did;
+}
 
 + (NSOpenGLPixelFormat *)defaultPixelFormat
 {
