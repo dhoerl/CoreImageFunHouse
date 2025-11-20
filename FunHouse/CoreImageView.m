@@ -497,7 +497,9 @@ NSLog(@"E4 %@", NSStringFromRect(res.extent));
 - (void)viewBoundsDidChange:(NSRect)bounds
 {
     // we set up a tracking region so we can get mouseEntered and mouseExited events
-    [self removeTrackingRect:lastTrack];
+    if (lastTrack != 0) {
+        [self removeTrackingRect:lastTrack];
+    }
     lastTrack = [self addTrackingRect:bounds owner:self userData:nil assumeInside:NO];
 }
 
@@ -521,21 +523,24 @@ NSLog(@"E4 %@", NSStringFromRect(res.extent));
         {
             if (!printingContext)
             {
-                CGFloat displayDensity = self.window.backingScaleFactor;
-                im = [im imageByApplyingTransform:CGAffineTransformMakeScale(displayDensity, displayDensity)];
-
+                // Scale image to backing coordinates to match r and the GL viewport
+                CGFloat backingScale = self.window.backingScaleFactor;
+                if (backingScale == 0.0) backingScale = 1.0;
+                
+                im = [im imageByApplyingTransform:CGAffineTransformMakeScale(backingScale, backingScale)];
+                
+                // r is already in backing coordinates from SampleCIView
                 NSLog(@"IM EXTENT %@", NSStringFromRect(im.extent));
-                NSLog(@"IM DEF EXTENT %@", NSStringFromRect(im.definition.extent));
-                NSLog(@"CI DRAWRECT %@", NSStringFromRect(r));
+                NSLog(@"CI DRAWRECT r=%@", NSStringFromRect(r));
                 
-                // Account for backing scale factor (Retina displays)
-                CGFloat backingScale = [self.window backingScaleFactor];
-                
-                // Scale the drawing rectangle to backing coordinates
-                CGRect backingRect = CGRectMake(r.origin.x * backingScale, r.origin.y * backingScale, r.size.width * backingScale, r.size.height * backingScale);
+                if (CGRectIsInfinite(im.extent))
+                {
+                    im = [im imageByCroppingToRect:r];
+                }
 
-                NSLog(@"from: %@ to %@ bounds %@", NSStringFromRect(im.extent), NSStringFromRect(backingRect), NSStringFromRect([self bounds]));
-                [context drawImage:im inRect:backingRect fromRect:im.extent];
+                NSLog(@"Drawing image extent=%@ inRect=%@ fromRect=%@", NSStringFromRect(im.extent), NSStringFromRect(r), NSStringFromRect(im.extent));
+                // r is in backing coordinates, matching the GL viewport
+                [context drawImage:im inRect:r fromRect:im.extent];
             }
             else
             {
