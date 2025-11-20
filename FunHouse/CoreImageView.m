@@ -266,86 +266,75 @@
 // render origin handles using AppKit directly
 - (CIImage *)drawPoints:(CIImage *)im inCIContext:(CIContext *)context
 {
-    NSInteger i, count;
-    CGFloat x, y, width, height;
-    CIFilter *f;
-    NSEnumerator *e;
-    CIVector *vec;
-    NSDictionary *attr, *parameter;
-    NSString *key, *typestring, *classstring, *type;
-    NSArray *inputKeys;
-    FunHouseDocument *d;
-    EffectStack *es;
-    NSPoint pt;
-    NSAffineTransform *tr;
-    NSAffineTransformStruct S;
-    NSString *str, *str2, *localizedParameter;
-    CGContextRef cg;
-    CGLayerRef layer;
-    NSRect bounds;
-    CIImage *image;
-    
 	NSGraphicsContext *printingContext = [NSGraphicsContext currentContext];
 
-CGRect origRect = im.extent;
-//bounds = [self bounds];
-bounds = origRect;
+//NSRect bounds = [self bounds];
+    NSRect bounds = im.extent;
 
-    layer = [context createCGLayerWithSize:CGSizeMake(NSWidth(bounds), NSHeight(bounds)) info:nil];
-    cg = CGLayerGetContext(layer);
-    d = (FunHouseDocument *)[controller document];
+    CGContextRef cg = CGBitmapContextCreate(
+        NULL,
+        bounds.size.width,
+        bounds.size.height,
+        8,
+        0,
+        CGColorSpaceCreateWithName(kCGColorSpaceSRGB),
+        kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big
+    );
+
+    FunHouseDocument *d = (FunHouseDocument *)[controller document];
     // enumerate filters, images, text placements in the effect stack (bottom-to-top)
-    es = [d effectStack];
-    count = [es layerCount];
+    EffectStack *es = [d effectStack];
+    NSInteger count = [es layerCount];
 
-    for (i = 0; i < count; i++)
+    for (NSInteger i = 0; i < count; i++)
     {
         // if the layer isn't enabled, don't show the handle either
         if (![es layerEnabled:i])
             continue;
-        type = [es typeAtIndex:i];
+
+        NSString *type = [es typeAtIndex:i];
         if ([type isEqualToString:@"filter"])
         {
             // filter effect stack element
-            f = [es filterAtIndex:i];
+            CIFilter *f = [es filterAtIndex:i];
             if (f == nil) {
-                CGLayerRelease(layer);
+                CGContextRelease(cg);
                 return nil;
             }
-            attr = [f attributes];
+            NSDictionary *attr = [f attributes];
             // iterate over parameters, look for parameters containing an origin to be displayed
-            inputKeys = [f inputKeys];
-            e = [inputKeys objectEnumerator];
-            while ((key = [e nextObject]) != nil) 
+            NSArray<NSString *> *inputKeys = [f inputKeys];
+            NSEnumerator *e = [inputKeys objectEnumerator];
+            NSString *key;
+            while ((key = [e nextObject]) != nil)
             {
-                parameter = [attr objectForKey:key];
-                classstring = [parameter objectForKey:kCIAttributeClass];
-                localizedParameter = [parameter objectForKey:kCIAttributeDisplayName];
-                str = [NSString stringWithFormat:@"%@ %@", [CIFilter localizedNameForFilterName:NSStringFromClass([f class])],
+                NSDictionary *parameter = [attr objectForKey:key];
+                NSString *classstring = [parameter objectForKey:kCIAttributeClass];
+                NSString *localizedParameter = [parameter objectForKey:kCIAttributeDisplayName];
+                NSString *str = [NSString stringWithFormat:@"%@ %@", [CIFilter localizedNameForFilterName:NSStringFromClass([f class])],
                   localizedParameter, nil];
                 if ([classstring isEqualToString:@"CIVector"])
                 {
-                    typestring = [parameter objectForKey:kCIAttributeType];
+                    NSString *typestring = [parameter objectForKey:kCIAttributeType];
                     if ([typestring isEqualToString:kCIAttributeTypePosition])
                     {
                         // 2D position (point) like a center
-                        vec = [f valueForKey:key];
-                        pt.x = [vec X];
-                        pt.y = [vec Y];
-                        [self drawPoint:pt label:str intoContext:cg];
+                        CIVector *vec = [f valueForKey:key];
+                        [self drawPoint:NSMakePoint(vec.X, vec.Y) label:str intoContext:cg];
                     }
                     else if ([typestring isEqualToString:kCIAttributeTypeRectangle])
                     {
                         // rectangle - show 4 handles, labelled properly
-                        vec = [f valueForKey:key];
+                        CIVector *vec = [f valueForKey:key];
                         // make the 4 points
-                        x = [vec X];
-                        y = [vec Y];
-                        width = [vec Z];
-                        height = [vec W];
+                        NSPoint pt;
+                        CGFloat x = [vec X];
+                        CGFloat y = [vec Y];
+                        CGFloat width = [vec Z];
+                        CGFloat height = [vec W];
                         pt.x = x;
                         pt.y = y;
-                        str2 = [str stringByAppendingString:@" bottom left"];
+                        NSString *str2 = [str stringByAppendingString:@" bottom left"];
                         [self drawPoint:pt label:str2 intoContext:cg];
                         pt.x = x + width;
                         pt.y = y;
@@ -363,24 +352,18 @@ bounds = origRect;
                     else if ([typestring isEqualToString:kCIAttributeTypePosition3])
                     {
                         // 3D position, only view the (x,y) components
-                        vec = [f valueForKey:key];
-                        // make the 4 points
-                        x = [vec X];
-                        y = [vec Y];
-                        pt.x = x;
-                        pt.y = y;
-                        [self drawPoint:pt label:str intoContext:cg];
+                        CIVector *vec = [f valueForKey:key];
+                        [self drawPoint:CGPointMake(vec.X, vec.Y) label:str intoContext:cg];
                     }
                 }
                 else if ([classstring isEqualToString:@"NSAffineTransform"])
                 {
                     // affine transform origin
-                    tr = [f valueForKey:key];
-                    S = [tr transformStruct];
-                    pt.x = S.tX;
-                    pt.y = S.tY;
-                    str2 = [str stringByAppendingString:@" origin"];
-                    [self drawPoint:pt label:str2 intoContext:cg];
+                    NSAffineTransform *tr = [f valueForKey:key];
+                    NSAffineTransformStruct S = [tr transformStruct];
+                    [self drawPoint:NSMakePoint(S.tX, S.tY)
+                              label:[str stringByAppendingString:@" origin"]
+                        intoContext:cg];
                 }
             }
         }
@@ -390,36 +373,43 @@ bounds = origRect;
             // show an image origin (in its center)
             CGRect r = [[es imageAtIndex:i] extent];
             NSPoint offset = [es offsetAtIndex:i];
-            pt.x = offset.x + (r.origin.x + r.size.width * 0.5);
-            pt.y = offset.y + (r.origin.y + r.size.height * 0.5);
-            str = [[es filenameAtIndex:i] stringByAppendingString:@" center"];
-            [self drawPoint:pt label:str intoContext:cg];
+            NSPoint pt = NSMakePoint(offset.x + (r.origin.x + r.size.width * 0.5),
+                                     offset.y + (r.origin.y + r.size.height * 0.5));
+            [self drawPoint:pt
+                      label:[[es filenameAtIndex:i] stringByAppendingString:@" center"]
+                intoContext:cg];
         }
         else if ([type isEqualToString:@"text"])
         {
             // text effect stack element
             // show a text origin (baseline point)
             NSPoint offset = [es offsetAtIndex:i];
-            pt.x = offset.x;
-            pt.y = offset.y;
-            [self drawPoint:pt label:@"text origin" intoContext:cg];
+            [self drawPoint:offset label:@"text origin" intoContext:cg];
         }
     }
-    image = [[CIImage alloc] initWithCGLayer:layer];
-    CGLayerRelease(layer);
+
+    CGImageRef cgimg = CGBitmapContextCreateImage(cg);
+    CIImage *image = [[CIImage alloc] initWithCGImage:cgimg];
+    CGContextRelease(cg);
+
 NSLog(@"J1 %@", NSStringFromRect(image.extent));
 NSLog(@"J2 %@", NSStringFromRect(im.extent));
 
-    f = [CIFilter filterWithName:@"CISourceOverCompositing"];
+    if (image == nil) {
+        NSLog(@"Failed to create CIImage from drawPoints");
+        return im;
+    }
+
+    CIFilter *f = [CIFilter filterWithName:@"CISourceOverCompositing"];
     [f setValue:im forKey:@"inputBackgroundImage"];
     [f setValue:image forKey:@"inputImage"];
 
     if (printingContext && printingContext != [NSGraphicsContext currentContext]) {
         [NSGraphicsContext setCurrentContext:printingContext];
     }
-    image = [f valueForKey:@"outputImage"];
-NSLog(@"J3 %@", NSStringFromRect(image.extent));
-return image;
+    
+NSLog(@"J3 %@", NSStringFromRect(f.outputImage.extent));
+    return f.outputImage;
 }
 
 // compute the whole core image graph for the view (not yet evaluated!)
@@ -439,7 +429,7 @@ NSLog(@"E1 %@", NSStringFromRect(res.extent));
     // overlay onto a constant color (black) to show alpha
     CIFilter *f = [CIFilter filterWithName:@"CIConstantColorGenerator"];
     [f setValue:[CIColor colorWithRed:0.0 green:0.0 blue:0.0 alpha:1.0] forKey:@"inputColor"];
-    CIImage *black = [f valueForKey:@"outputImage"];
+    CIImage *black = f.outputImage;
 
 black = [black imageByClampingToRect:res.extent];
 NSLog(@"E2 %@", NSStringFromRect(res.extent));
