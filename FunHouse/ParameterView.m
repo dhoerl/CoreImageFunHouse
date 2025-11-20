@@ -634,7 +634,6 @@ static void format_floating_point_number(CGFloat v, NSInteger before, NSInteger 
 // then associate that image with the text layer in the effect stack
 - (void)recomputeTextImage:(NSTextStorage *)ts
 {
-    NSBitmapImageRep *bitmapimagerep;
     NSSize sz;
     CIImage *im;
     NSRect bounds;
