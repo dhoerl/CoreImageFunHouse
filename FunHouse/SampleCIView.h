@@ -49,26 +49,14 @@
 #import <QuartzCore/CoreImage.h>
 
 @interface SampleCIView: NSOpenGLView
-{
-    NSMutableDictionary *_contextOptions;
-    CIContext			*_context;
-    CIImage				*_image;
-    NSRect				_lastBounds;
-	
-	CGLContextObj		_cglContext;
-	NSOpenGLPixelFormat *_pf;
-	CGDirectDisplayID	_did;
-}
+
+@property (nonatomic, strong) CIContext *context;
+@property (nonatomic, strong) NSMutableDictionary *contextOptions;
+@property (nonatomic, strong) CIImage *image;
 
 - (void)setContextOptions:(NSMutableDictionary *)dict;
-
 - (void)setImage:(CIImage *)image;
 - (void)setImage:(CIImage *)image dirtyRect:(CGRect)r;
-
-- (CIImage *)image;
-
-// Called when the view bounds have changed
-- (void)viewBoundsDidChange:(NSRect)bounds;
 
 @end
 

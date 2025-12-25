@@ -48,16 +48,11 @@
 #import <AppKit/AppKit.h>
 
 @interface FunHouseAppDelegate : NSObject
-{
-@private	NSWindowController *_preferencesWindowController;
-
-}
 
 - (IBAction)showEffectStackAction:(id)sender;
 - (IBAction)zoomToFullScreenAction:(id)sender;
 - (IBAction)undo:(id)sender;
 - (IBAction)redo:(id)sender;
-
 - (IBAction)showPreferences:(id)sender;
 
 @end

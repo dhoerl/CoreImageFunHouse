@@ -53,20 +53,47 @@
 
 #define originHandleSize 4.0
 
+// these are the possible item types that get moved
+// within a mouseDown mouseDragged mouseUp loop
+enum
+    {
+    pmNone = 0,
+    pmPoint,            // moving a filter point (example: the inputCenter parameter to CIBumpDistortion)
+    pmTopLeft,          // moving the top left point of a filter rectangle (example: the inputRectangle parameter to CICrop)
+    pmBottomLeft,       // moving the bottom left point of a filter rectangle (example: the inputRectangle parameter to CICrop)
+    pmTopRight,         // moving the top right point of a filter rectangle (example: the inputRectangle parameter to CICrop)
+    pmBottomRight,      // moving the bottom right point of a filter rectangle (example: the inputRectangle parameter to CICrop)
+    pmImageOffset,      // moving an image layer's offset
+    pmTextOffset,       // moving a text layer's origin
+    pmTransformOffset,  // moving the offset of a filter's affine transform parameter
+    pmSpotLight,        // moving a CISpotLight position parameter
+    pm3DPoint,          // moving the XY components of a filter 3D position parameter
+    };
+
 @implementation CoreImageView
+{
+    BOOL initialized;
+    NSBundle *bundle;
+    FunHouseWindowController *controller;
+    // these fields are for mouse movement - they're set up in mouseDown, and used in mouseDragged and mouseUp
+    NSInteger parmIndex;
+    NSString *parmKey;
+    NSInteger parmMode;
+    NSString *savedActionName;
+    BOOL movingNow;
+    // this onee is used to indicate that the filter, image, and text layer origin handles are to be displayed
+    BOOL displayingPoints;
+    // the tracking rectangle is set up so mouseEntered and mouseExited events will be generated
+    NSTrackingRectTag lastTrack;
+    // view transform
+    CGFloat viewTransformScale;
+    CGFloat viewTransformOffsetX;
+    CGFloat viewTransformOffsetY;
+}
 
 /*
     Initialzation
 */
-    
-- (id)initWithFrame: (NSRect)frameRect
-{
-    if((self = [super initWithFrame:frameRect]) != nil)
-    {
-    }
-
-    return self;
-}
 
 - (void)awakeFromNib
 {
@@ -80,11 +107,6 @@
     viewTransformScale = 1.0;
     viewTransformOffsetX = 0.0;
     viewTransformOffsetY = 0.0;
-}
-
-- (void)dealloc
-{
-    [super dealloc];
 }
 
 /*
@@ -139,11 +161,10 @@
     id oldValue;
     
     d = (FunHouseDocument *)[controller document];
-    oldValue = [[f valueForKey:key] retain];
+    oldValue = [f valueForKey:key];
     [f setValue:val forKey:key];
     // this is the special way the undo manager saves old object values so it can undo properly
     [[[d undoManager] prepareWithInvocationTarget:self] setFilter:f value:oldValue forKey:key];
-    [oldValue release];
 }
 
 // call this to get the undo string (shown in the edit menu)
@@ -161,10 +182,9 @@
     id oldValue;
     
     d = (FunHouseDocument *)[controller document];
-    oldValue = [[dict valueForKey:key] retain];
+    oldValue = [dict valueForKey:key];
     [dict setValue:val forKey:key];
     [[[d undoManager] prepareWithInvocationTarget:self] setDict:dict value:oldValue forKey:key];
-    [oldValue release];
 }
 
 // call this to set the undo string for a filter
@@ -225,6 +245,9 @@
 // all items are "shadowed"
 - (void)drawPoint:(NSPoint)pt label:(NSString *)str intoContext:(CGContextRef)cg
 {
+    if (cg == nil)
+        return;
+
     CGRect R;
     CGFloat size;    
     pt.x = pt.x * viewTransformScale + viewTransformOffsetX;
@@ -257,7 +280,7 @@
     CGContextSetRGBFillColor(cg, 0.0, 0.0, 0.0, 1.0);
     if (!movingNow)
     {
- 		NSGraphicsContext *graphicsContext = [NSGraphicsContext graphicsContextWithGraphicsPort:cg flipped:NO];
+        NSGraphicsContext *graphicsContext = [NSGraphicsContext graphicsContextWithCGContext:cg flipped:NO];
         assert(graphicsContext);
     
 		[NSGraphicsContext setCurrentContext:graphicsContext];
@@ -270,86 +293,75 @@
 // render origin handles using AppKit directly
 - (CIImage *)drawPoints:(CIImage *)im inCIContext:(CIContext *)context
 {
-    NSInteger i, count;
-    CGFloat x, y, width, height;
-    CIFilter *f;
-    NSEnumerator *e;
-    CIVector *vec;
-    NSDictionary *attr, *parameter;
-    NSString *key, *typestring, *classstring, *type;
-    NSArray *inputKeys;
-    FunHouseDocument *d;
-    EffectStack *es;
-    NSPoint pt;
-    NSAffineTransform *tr;
-    NSAffineTransformStruct S;
-    NSString *str, *str2, *localizedParameter;
-    CGContextRef cg;
-    CGLayerRef layer;
-    NSRect bounds;
-    CIImage *image;
-    
 	NSGraphicsContext *printingContext = [NSGraphicsContext currentContext];
 
-CGRect origRect = im.extent;
-//bounds = [self bounds];
-bounds = origRect;
+//NSRect bounds = [self bounds];
+    NSRect bounds = im.extent;
 
-    layer = [context createCGLayerWithSize:CGSizeMake(NSWidth(bounds), NSHeight(bounds)) info:nil];
-    cg = CGLayerGetContext(layer);
-    d = (FunHouseDocument *)[controller document];
+    CGContextRef cg = CGBitmapContextCreate(
+        NULL,
+        bounds.size.width,
+        bounds.size.height,
+        8,
+        0,
+        CGColorSpaceCreateWithName(kCGColorSpaceSRGB),
+        kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big
+    );
+
+    FunHouseDocument *d = (FunHouseDocument *)[controller document];
     // enumerate filters, images, text placements in the effect stack (bottom-to-top)
-    es = [d effectStack];
-    count = [es layerCount];
+    EffectStack *es = [d effectStack];
+    NSInteger count = [es layerCount];
 
-    for (i = 0; i < count; i++)
+    for (NSInteger i = 0; i < count; i++)
     {
         // if the layer isn't enabled, don't show the handle either
         if (![es layerEnabled:i])
             continue;
-        type = [es typeAtIndex:i];
+
+        NSString *type = [es typeAtIndex:i];
         if ([type isEqualToString:@"filter"])
         {
             // filter effect stack element
-            f = [es filterAtIndex:i];
+            CIFilter *f = [es filterAtIndex:i];
             if (f == nil) {
-                CGLayerRelease(layer);
+                CGContextRelease(cg);
                 return nil;
             }
-            attr = [f attributes];
+            NSDictionary *attr = [f attributes];
             // iterate over parameters, look for parameters containing an origin to be displayed
-            inputKeys = [f inputKeys];
-            e = [inputKeys objectEnumerator];
-            while ((key = [e nextObject]) != nil) 
+            NSArray<NSString *> *inputKeys = [f inputKeys];
+            NSEnumerator *e = [inputKeys objectEnumerator];
+            NSString *key;
+            while ((key = [e nextObject]) != nil)
             {
-                parameter = [attr objectForKey:key];
-                classstring = [parameter objectForKey:kCIAttributeClass];
-                localizedParameter = [parameter objectForKey:kCIAttributeDisplayName];
-                str = [NSString stringWithFormat:@"%@ %@", [CIFilter localizedNameForFilterName:NSStringFromClass([f class])],
+                NSDictionary *parameter = [attr objectForKey:key];
+                NSString *classstring = [parameter objectForKey:kCIAttributeClass];
+                NSString *localizedParameter = [parameter objectForKey:kCIAttributeDisplayName];
+                NSString *str = [NSString stringWithFormat:@"%@ %@", [CIFilter localizedNameForFilterName:NSStringFromClass([f class])],
                   localizedParameter, nil];
                 if ([classstring isEqualToString:@"CIVector"])
                 {
-                    typestring = [parameter objectForKey:kCIAttributeType];
+                    NSString *typestring = [parameter objectForKey:kCIAttributeType];
                     if ([typestring isEqualToString:kCIAttributeTypePosition])
                     {
                         // 2D position (point) like a center
-                        vec = [f valueForKey:key];
-                        pt.x = [vec X];
-                        pt.y = [vec Y];
-                        [self drawPoint:pt label:str intoContext:cg];
+                        CIVector *vec = [f valueForKey:key];
+                        [self drawPoint:NSMakePoint(vec.X, vec.Y) label:str intoContext:cg];
                     }
                     else if ([typestring isEqualToString:kCIAttributeTypeRectangle])
                     {
                         // rectangle - show 4 handles, labelled properly
-                        vec = [f valueForKey:key];
+                        CIVector *vec = [f valueForKey:key];
                         // make the 4 points
-                        x = [vec X];
-                        y = [vec Y];
-                        width = [vec Z];
-                        height = [vec W];
+                        NSPoint pt;
+                        CGFloat x = [vec X];
+                        CGFloat y = [vec Y];
+                        CGFloat width = [vec Z];
+                        CGFloat height = [vec W];
                         pt.x = x;
                         pt.y = y;
-                        str2 = [str stringByAppendingString:@" bottom left"];
+                        NSString *str2 = [str stringByAppendingString:@" bottom left"];
                         [self drawPoint:pt label:str2 intoContext:cg];
                         pt.x = x + width;
                         pt.y = y;
@@ -367,24 +379,18 @@ bounds = origRect;
                     else if ([typestring isEqualToString:kCIAttributeTypePosition3])
                     {
                         // 3D position, only view the (x,y) components
-                        vec = [f valueForKey:key];
-                        // make the 4 points
-                        x = [vec X];
-                        y = [vec Y];
-                        pt.x = x;
-                        pt.y = y;
-                        [self drawPoint:pt label:str intoContext:cg];
+                        CIVector *vec = [f valueForKey:key];
+                        [self drawPoint:CGPointMake(vec.X, vec.Y) label:str intoContext:cg];
                     }
                 }
                 else if ([classstring isEqualToString:@"NSAffineTransform"])
                 {
                     // affine transform origin
-                    tr = [f valueForKey:key];
-                    S = [tr transformStruct];
-                    pt.x = S.tX;
-                    pt.y = S.tY;
-                    str2 = [str stringByAppendingString:@" origin"];
-                    [self drawPoint:pt label:str2 intoContext:cg];
+                    NSAffineTransform *tr = [f valueForKey:key];
+                    NSAffineTransformStruct S = [tr transformStruct];
+                    [self drawPoint:NSMakePoint(S.tX, S.tY)
+                              label:[str stringByAppendingString:@" origin"]
+                        intoContext:cg];
                 }
             }
         }
@@ -394,36 +400,43 @@ bounds = origRect;
             // show an image origin (in its center)
             CGRect r = [[es imageAtIndex:i] extent];
             NSPoint offset = [es offsetAtIndex:i];
-            pt.x = offset.x + (r.origin.x + r.size.width * 0.5);
-            pt.y = offset.y + (r.origin.y + r.size.height * 0.5);
-            str = [[es filenameAtIndex:i] stringByAppendingString:@" center"];
-            [self drawPoint:pt label:str intoContext:cg];
+            NSPoint pt = NSMakePoint(offset.x + (r.origin.x + r.size.width * 0.5),
+                                     offset.y + (r.origin.y + r.size.height * 0.5));
+            [self drawPoint:pt
+                      label:[[es filenameAtIndex:i] stringByAppendingString:@" center"]
+                intoContext:cg];
         }
         else if ([type isEqualToString:@"text"])
         {
             // text effect stack element
             // show a text origin (baseline point)
             NSPoint offset = [es offsetAtIndex:i];
-            pt.x = offset.x;
-            pt.y = offset.y;
-            [self drawPoint:pt label:@"text origin" intoContext:cg];
+            [self drawPoint:offset label:@"text origin" intoContext:cg];
         }
     }
-    image = [[[CIImage alloc] initWithCGLayer:layer] autorelease];
-    CGLayerRelease(layer);
+
+    CGImageRef cgimg = CGBitmapContextCreateImage(cg);
+    CIImage *image = [[CIImage alloc] initWithCGImage:cgimg];
+    CGContextRelease(cg);
+
 NSLog(@"J1 %@", NSStringFromRect(image.extent));
 NSLog(@"J2 %@", NSStringFromRect(im.extent));
 
-    f = [CIFilter filterWithName:@"CISourceOverCompositing"];
+    if (image == nil) {
+        NSLog(@"Failed to create CIImage from drawPoints");
+        return im;
+    }
+
+    CIFilter *f = [CIFilter filterWithName:@"CISourceOverCompositing"];
     [f setValue:im forKey:@"inputBackgroundImage"];
     [f setValue:image forKey:@"inputImage"];
 
     if (printingContext && printingContext != [NSGraphicsContext currentContext]) {
         [NSGraphicsContext setCurrentContext:printingContext];
     }
-    image = [f valueForKey:@"outputImage"];
-NSLog(@"J3 %@", NSStringFromRect(image.extent));
-return image;
+    
+NSLog(@"J3 %@", NSStringFromRect(f.outputImage.extent));
+    return f.outputImage;
 }
 
 // compute the whole core image graph for the view (not yet evaluated!)
@@ -443,7 +456,7 @@ NSLog(@"E1 %@", NSStringFromRect(res.extent));
     // overlay onto a constant color (black) to show alpha
     CIFilter *f = [CIFilter filterWithName:@"CIConstantColorGenerator"];
     [f setValue:[CIColor colorWithRed:0.0 green:0.0 blue:0.0 alpha:1.0] forKey:@"inputColor"];
-    CIImage *black = [f valueForKey:@"outputImage"];
+    CIImage *black = f.outputImage;
 
 black = [black imageByClampingToRect:res.extent];
 NSLog(@"E2 %@", NSStringFromRect(res.extent));
@@ -484,61 +497,69 @@ NSLog(@"E4 %@", NSStringFromRect(res.extent));
 - (void)viewBoundsDidChange:(NSRect)bounds
 {
     // we set up a tracking region so we can get mouseEntered and mouseExited events
-    [self removeTrackingRect:lastTrack];
+    if (lastTrack != 0) {
+        [self removeTrackingRect:lastTrack];
+    }
     lastTrack = [self addTrackingRect:bounds owner:self userData:nil assumeInside:NO];
 }
 
 - (void)drawRect:(NSRect)r inCIContext:(CIContext *)context
 {
-    CGRect cgr;
-    CIImage *im;
-
-    cgr = CGRectMake(r.origin.x, r.origin.y, r.size.width, r.size.height);
     // note: surround a core image evaluation with its own autorelease pool to prevent a huge amount of buildup
     // during a slider drag, for instance.
 
+    CIImage *im;
     NSGraphicsContext *printingContext = [NSGraphicsContext currentContext];
 
-    NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
-    // compute the core image graph for the view (based on the effect stack)
-    im = [self coreImageResult];
-    // display origin handles when the mouse is inside the view, and when a modal vwindow isn't present...
-    if (displayingPoints && [NSApp modalWindow] == nil) {
-        im = [self drawPoints:im inCIContext:context];
+    @autoreleasepool {
+        // compute the core image graph for the view (based on the effect stack)
+        im = [self coreImageResult];
+        // display origin handles when the mouse is inside the view, and when a modal vwindow isn't present...
+        if (displayingPoints && [NSApp modalWindow] == nil) {
+            im = [self drawPoints:im inCIContext:context];
+        }
+        // if successful, draw the image
+        if (im != nil && context != nil)
+        {
+            if (!printingContext)
+            {
+                // Scale image to backing coordinates to match r and the GL viewport
+                CGFloat backingScale = self.window.backingScaleFactor;
+                if (backingScale == 0.0) backingScale = 1.0;
+                
+                im = [im imageByApplyingTransform:CGAffineTransformMakeScale(backingScale, backingScale)];
+                
+                // r is already in backing coordinates from SampleCIView
+                NSLog(@"IM EXTENT %@", NSStringFromRect(im.extent));
+                NSLog(@"CI DRAWRECT r=%@", NSStringFromRect(r));
+                
+                if (CGRectIsInfinite(im.extent))
+                {
+                    im = [im imageByCroppingToRect:r];
+                }
+
+                NSLog(@"Drawing image extent=%@ inRect=%@ fromRect=%@", NSStringFromRect(im.extent), NSStringFromRect(r), NSStringFromRect(im.extent));
+                // r is in backing coordinates, matching the GL viewport
+                [context drawImage:im inRect:r fromRect:im.extent];
+            }
+            else
+            {
+                CGImageRef cgImage;
+
+                cgImage = [context createCGImage:im fromRect:r format:kCIFormatRGBA16 colorSpace:nil];
+
+                if (cgImage != NULL)
+                {
+                    CGContextDrawImage ([printingContext CGContext], r, cgImage);
+                    CGImageRelease (cgImage);
+                }
+            }
+        }
     }
-    // if successful, draw the image
-    if (im != nil && context != nil)
-    {
-	if (!printingContext)
-	{
-NSLog(@"IM EXTENT %@", NSStringFromRect(im.extent));
-NSLog(@"IM DEF EXTENT %@", NSStringFromRect(im.definition.extent));
-NSLog(@"CI DRAWRECT %@", NSStringFromRect(r));
-//cgr = CGRectMake(0, 0, 1200, 900);
-        CGRect fromRect = im.extent;
-        CGRect inRect = CGRectMake((cgr.size.width - fromRect.size.width)/2, (cgr.size.height - fromRect.size.height)/2, fromRect.size.width, fromRect.size.height);
-
-        NSLog(@"from: %@ to %@ bounds %@", NSStringFromRect(fromRect), NSStringFromRect(inRect), NSStringFromRect([self bounds]));
-        [context drawImage:im inRect:inRect fromRect:fromRect];
-	}
-	else
-	{
-	    CGImageRef cgImage;
-
-	    cgImage = [context createCGImage:im fromRect:cgr format:kCIFormatRGBA16 colorSpace:nil];
-
-	    if (cgImage != NULL)
-	    {
-            CGContextDrawImage ([printingContext CGContext], cgr, cgImage);
-            CGImageRelease (cgImage);
-	    }
-	}
-    }
-    [pool release];
 }
 
 /*
-    Event handling
+ Event handling
 */
 
 // when entering the view, turn on origin handle display
@@ -770,7 +791,7 @@ NSLog(@"CI DRAWRECT %@", NSStringFromRect(r));
     else if (parmMode == pmTextOffset)
         savedActionName = @"Text Move";
     else if (parmMode!= pmNone)
-        savedActionName = [[self actionNameForFilter:f key:parmKey] retain];
+        savedActionName = [self actionNameForFilter:f key:parmKey];
     [self setNeedsDisplay:YES];
 }
 
@@ -905,8 +926,6 @@ NSLog(@"CI DRAWRECT %@", NSStringFromRect(r));
     [[d undoManager] setActionName:savedActionName];
     // explicitly group all the changes during the entire mouse move
     [[d undoManager] endUndoGrouping];
-    if (savedActionName != nil)
-        [savedActionName release];
     [self setNeedsDisplay:YES];
 }
 

@@ -83,7 +83,7 @@
     frame = [[NSScreen mainScreen] frame];
     // create a new borderless window the size of the entire screen
     w = [[NSWindow alloc] initWithContentRect:frame
-      styleMask:NSBorderlessWindowMask backing:NSBackingStoreBuffered defer:YES];
+                                    styleMask:NSWindowStyleMaskBorderless backing:NSBackingStoreBuffered defer:YES];
     // put it up front
     [w makeKeyAndOrderFront:self];
     // and initialize with this window
@@ -97,7 +97,7 @@
     
     w = [self window];
     // create a new core image view (the size of the entire content view) for the full screen window
-    coreImageView = [[[CoreImageView alloc] initWithFrame:[[w contentView] bounds]] autorelease];
+    coreImageView = [[CoreImageView alloc] initWithFrame:[[w contentView] bounds]];
     // tie us in as its controller
     [coreImageView setFunHouseWindowController:self];
     [self setUpCoreImageView];
@@ -114,7 +114,6 @@
     [[NSNotificationCenter defaultCenter] removeObserver:self];
     // Balance the -setFunHouseWindowController: that our -windowDidLoad does.
     [coreImageView setFunHouseWindowController:nil];
-    [super dealloc];
 }
 
 // this gets called when a typical window is loaded from the FunHouseWindow.nib file
@@ -150,7 +149,7 @@
         imagesize = [im extent].size;
         // if the image is too large to fit on screen in a document window, we must apply a view transform
         screensize = [[NSScreen mainScreen] frame].size;
-        R = [NSWindow frameRectForContentRect:NSMakeRect(0, 0, 100, 100) styleMask:NSTitledWindowMask];
+        R = [NSWindow frameRectForContentRect:NSMakeRect(0, 0, 100, 100) styleMask:NSWindowStyleMaskTitled];
         xwiden = R.size.width - 100 - R.origin.x;
         ywiden = R.size.height - 100 - R.origin.y;
         screensize.width -= xwiden;

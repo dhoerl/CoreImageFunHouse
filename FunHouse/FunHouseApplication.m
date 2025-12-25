@@ -57,40 +57,23 @@
     // provide a set of "standard" images used to fill in filter CIImage parameters
     // see the EffectStackController setAutomaticDefaults: method
     // a texture - used for CIGlassDistortion
-    texturepath = [[[NSBundle mainBundle] pathForResource:@"smoothtexture" ofType: @"tiff"] retain];
+    _texturepath = [NSBundle.mainBundle pathForResource:@"smoothtexture" ofType: @"tiff"];
     // a material map used for shading - used for CIShadedMaterial
-    shadingemappath = [[[NSBundle mainBundle] pathForResource:@"lightball" ofType: @"tiff"] retain];
+    _shadingemappath = [NSBundle.mainBundle pathForResource:@"lightball" ofType: @"tiff"];
     // a material map with alpha that's not all 1 - used for CIRippleTransition
-    alphaemappath = [[[NSBundle mainBundle] pathForResource:@"restrictedshine" ofType: @"tiff"] retain];
+    _alphaemappath = [NSBundle.mainBundle pathForResource:@"restrictedshine" ofType: @"tiff"];
     // color ramp - a width "n" height 1 image - used for CIColorMap
-    ramppath = [[[NSBundle mainBundle] pathForResource:@"colormap" ofType: @"tiff"] retain];
+    _ramppath = [NSBundle.mainBundle pathForResource:@"colormap" ofType: @"tiff"];
     // mask (grayscale image) used for CIDisintegrateWithMaskTransition
-    maskpath = [[[NSBundle mainBundle] pathForResource:@"mask" ofType: @"tiff"] retain];
-}
-
-- (void)dealloc
-{
-    [texturepath release];
-    [texture release];
-    [shadingemappath release];
-    [shadingemap release];
-    [alphaemappath release];
-    [alphaemap release];
-    [ramppath release];
-    [ramp release];
-    [maskpath release];
-    [mask release];
-    [super dealloc];
+    _maskpath = [NSBundle.mainBundle pathForResource:@"mask" ofType: @"tiff"];
 }
 
 // this procedure allows us to intercept the escape key (for full screen zoom)
 - (void)sendEvent:(NSEvent *)event
 {
-    if ([event type] == NSKeyDown)
+    if (event.type == NSEventTypeKeyDown)
     {
-        NSString *str;
-        
-        str = [event characters];
+        NSString *str = event.characters;
         if ([str characterAtIndex:0] == 0x1B) // escape
         {
             [(FunHouseAppDelegate*)[self delegate] zoomToFullScreenAction:self];
@@ -104,72 +87,69 @@
 // (depends on the current state)
 - (void)setFullScreenMenuTitle:(BOOL)inFullScreen
 {
-    if (inFullScreen)
-        [zoomToFullScreenMenuItem setTitle:@"Exit Full Screen"];
-    else
-        [zoomToFullScreenMenuItem setTitle:@"Zoom To Full Screen"];
+    [zoomToFullScreenMenuItem setTitle:inFullScreen ? @"Exit Full Screen" : @"Zoom To Full Screen"];
 }
 
 // accessors for default images (and their paths) for filters
 // load the images only on demand to keep launch time down
 - (CIImage *)defaultTexture
 {
-    if(texture == NULL)
-	texture = [[CIImage imageWithContentsOfURL:[NSURL fileURLWithPath:texturepath]] retain];
-    return texture;
+    if (_texture == NULL)
+        _texture = [CIImage imageWithContentsOfURL:[NSURL fileURLWithPath:self.texturepath]];
+    return _texture;
 }
 
 - (NSString *)defaultTexturePath
 {
-    return texturepath;
+    return _texturepath;
 }
 
 - (CIImage *)defaultShadingEMap
 {
-    if(shadingemap == NULL)
-	shadingemap = [[CIImage imageWithContentsOfURL:[NSURL fileURLWithPath:shadingemappath]] retain];
-    return shadingemap;
+    if(_shadingemap == NULL)
+        _shadingemap = [CIImage imageWithContentsOfURL:[NSURL fileURLWithPath:_shadingemappath]];
+    return _shadingemap;
 }
 
 - (NSString *)defaultShadingEMapPath
 {
-    return shadingemappath;
+    return _shadingemappath;
 }
 
 - (CIImage *)defaultAlphaEMap
 {
-    if(alphaemap == NULL)
-	alphaemap = [[CIImage imageWithContentsOfURL:[NSURL fileURLWithPath:alphaemappath]] retain];
-    return alphaemap;
+    if(_alphaemap == NULL)
+        _alphaemap = [CIImage imageWithContentsOfURL:[NSURL fileURLWithPath:_alphaemappath]];
+    return _alphaemap;
 }
 
 - (NSString *)defaultAlphaEMapPath
 {
-    return alphaemappath;
+    return _alphaemappath;
 }
 
 - (CIImage *)defaultRamp
 {
-    if(ramp == NULL)
-	ramp = [[CIImage imageWithContentsOfURL:[NSURL fileURLWithPath:ramppath]] retain];
-    return ramp;
+    if(_ramp == NULL)
+        _ramp = [CIImage imageWithContentsOfURL:[NSURL fileURLWithPath:_ramppath]];
+    return _ramp;
 }
 
 - (NSString *)defaultRampPath
 {
-    return ramppath;
+    return _ramppath;
 }
 
 - (CIImage *)defaultMask
 {
-    if(mask == NULL)
-	mask = [[CIImage imageWithContentsOfURL:[NSURL fileURLWithPath:maskpath]] retain];
-    return mask;
+    if(_mask == NULL)
+        _mask = [CIImage imageWithContentsOfURL:[NSURL fileURLWithPath:_maskpath]];
+    return _mask;
 }
 
 - (NSString *)defaultMaskPath
 {
-    return maskpath;
+    return _maskpath;
 }
 
 @end

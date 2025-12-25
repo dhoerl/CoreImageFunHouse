@@ -49,6 +49,10 @@
 #import "CoreImageView.h"
 
 @implementation EffectStack
+{
+    CIImage *baseImage;         // a pointer to the base image in the array (generally layers[0].image
+    NSMutableArray *layers;     // effect stack filter, image, text layers in an array
+}
 
 - (id)init
 {
@@ -58,13 +62,6 @@
         layers = [[NSMutableArray alloc] init];
     }
     return self;
-}
-
-- (void)dealloc
-{
-    [baseImage release];
-    [layers release];
-    [super dealloc];
 }
 
 // insert a filter layer into the layers array
@@ -347,7 +344,7 @@
         d3 = [NSMutableDictionary dictionary];
         [d3 setValue:path forKey:@"path"];
         // keep image file data around too!
-        [d3 setValue:[NSData dataWithContentsOfMappedFile:path] forKey:@"data"];
+        [d3 setValue:[NSData dataWithContentsOfFile:path] forKey:@"data"];
         [d2 setValue:d3 forKey:key];
     }
 }
@@ -399,7 +396,7 @@
     {
         [d setValue:path forKey:@"imageFilePath"];
         // keep image file data around too!
-        [d setValue:[NSData dataWithContentsOfMappedFile:path] forKey:@"imageFileData"];
+        [d setValue:[NSData dataWithContentsOfFile:path] forKey:@"imageFileData"];
     }
 }
 
@@ -475,7 +472,7 @@
         d = [layers objectAtIndex:0];
         [d setValue:path forKey:@"imageFilePath"];
         // keep image file data around too!
-        [d setValue:[NSData dataWithContentsOfMappedFile:path] forKey:@"imageFileData"];
+        [d setValue:[NSData dataWithContentsOfFile:path] forKey:@"imageFileData"];
     }
     else
         printf("attempted setBaseImage with non-empty effect stack\n");
@@ -484,44 +481,35 @@
 // return the core image graph for the effect stack (constrained to the rectangle)
 - (CIImage *)coreImageResultForRect:(NSRect)bounds
 {
-    BOOL usesExtent, usesImage, hasBackground;
-    NSInteger i, count;
-    CIFilter *f;
-    CIImage  *result;
-    NSDictionary *attr;
-    NSArray *inputKeys;
-    NSString *key, *classstring, *type;
-    NSEnumerator *enumerator;
-    NSMutableArray *resultstack;
-    
-    resultstack = [NSMutableArray arrayWithCapacity:10];
+    NSMutableArray *resultstack = [NSMutableArray arrayWithCapacity:10];
     // get result of filter running over image
-    count = [self layerCount];
-    result = nil;
-    for (i = 0; i < count; i++)
+    NSInteger count = [self layerCount];
+    CIImage *result = nil;
+    for (NSInteger i = 0; i < count; i++)
     {
         if (![self layerEnabled:i])
             continue;
-        type = [self typeAtIndex:i];
+        NSString *type = [self typeAtIndex:i];
         if ([type isEqualToString:@"filter"])
         {
             // filter layer
-            f = [self filterAtIndex:i];
+            CIFilter *f = [self filterAtIndex:i];
             if (f == nil)
                 continue;
-            usesExtent = NO;
-            usesImage = NO;
-            hasBackground = NO;
-            attr = [f attributes];
-            inputKeys = [f inputKeys];
+            BOOL usesExtent = NO;
+            BOOL usesImage = NO;
+            BOOL hasBackground = NO;
+            NSDictionary *attr = [f attributes];
+            NSArray *inputKeys = [f inputKeys];
             // scan the input parameters for various cases we need to handle
-            enumerator = [inputKeys objectEnumerator];
-            while ((key = [enumerator nextObject]) != nil) 
+            NSEnumerator *enumerator = [inputKeys objectEnumerator];
+            NSString *key;
+            while ((key = [enumerator nextObject]) != nil)
             {
                 id parameter = [attr objectForKey:key];
                 if ([parameter isKindOfClass:[NSDictionary class]])
                 {
-                    classstring = [(NSDictionary *)parameter objectForKey: kCIAttributeClass];
+                    NSString *classstring = [(NSDictionary *)parameter objectForKey: kCIAttributeClass];
                     if ([classstring isEqualToString:@"CIVector"] && [key isEqualToString:@"inputExtent"])
                         usesExtent = YES;
                     if ([key isEqualToString:@"inputImage"])
@@ -562,7 +550,7 @@
             CIImage *im = [self imageAtIndex:i];
             NSPoint offset = [self offsetAtIndex:i];
             // apply an affine transform to the iamge to account for the offset
-            f = [CIFilter filterWithName:@"CIAffineTransform"];
+            CIFilter *f = [CIFilter filterWithName:@"CIAffineTransform"];
             NSAffineTransform *t = [NSAffineTransform transform];
             [t translateXBy:offset.x yBy:offset.y];
             [f setValue:t forKey:@"inputTransform"];
@@ -578,7 +566,7 @@
         CIImage *background = nil;
         
         count = [resultstack count];
-        for (i = 0; i < count; i++)
+        for (NSInteger i = 0; i < count; i++)
         {
             if (i == 0)
                 background = [resultstack objectAtIndex:i];
@@ -732,7 +720,7 @@
         S.m22 = [[v valueForKey:[key stringByAppendingString:@"_m22"]] doubleValue];
         S.tX = [[v valueForKey:[key stringByAppendingString:@"_tX"]] doubleValue];
         S.tY = [[v valueForKey:[key stringByAppendingString:@"_tY"]] doubleValue];
-        t = [[[NSAffineTransform alloc] init] autorelease];
+        t = [[NSAffineTransform alloc] init];
         [t setTransformStruct:S];
         return t;
     }

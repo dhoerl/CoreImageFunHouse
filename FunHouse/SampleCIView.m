@@ -58,8 +58,15 @@
 
 @end
 
-
 @implementation SampleCIView
+{
+    NSRect _lastBounds;
+    CGFloat _lastBackingScale;
+
+    CGLContextObj _cglContext;
+    NSOpenGLPixelFormat *_pf;
+    CGDirectDisplayID    _did;
+}
 
 + (NSOpenGLPixelFormat *)defaultPixelFormat
 {
@@ -88,34 +95,20 @@
 - (void)dealloc
 {
 	[[NSNotificationCenter defaultCenter] removeObserver:self];
-    [_image release];
-    [_contextOptions release];
-    [_context release];
-	
-    [super dealloc];
 }
 
 - (void)setContextOptions:(NSMutableDictionary *)dict
 {
-    [_contextOptions release];
-    _contextOptions = [dict retain];
-	
-    [_context release];
+    _contextOptions = dict;
     _context = nil;
-}
-
-- (CIImage *)image
-{
-    return [[_image retain] autorelease];
 }
 
 - (void)setImage:(CIImage *)image dirtyRect:(CGRect)r
 {
     if (_image != image)
     {
-		[_image release];
-		_image = [image retain];
-		
+        _image = image;
+
 		if (CGRectIsInfinite (r))
 			[self setNeedsDisplay:YES];
 		else
@@ -163,8 +156,10 @@
 - (void)updateMatrices
 {
     NSRect r = [self bounds];
-	
-    if (!NSEqualRects (r, _lastBounds))
+    CGFloat backingScale = self.window.backingScaleFactor; // Retina support
+    if (backingScale == 0.0) backingScale = 1.0; // Fallback for when window is nil
+
+    if (!NSEqualRects(r, _lastBounds) || _lastBackingScale != backingScale)
     {
 		[[self openGLContext] update];
 		
@@ -172,17 +167,24 @@
 		 * with the origin in the bottom left and one unit equal to one
 		 * device pixel. */
 		
-		glViewport (0, 0, r.size.width, r.size.height);
+
+		NSLog(@"SampleCIView updateMatrices: bounds=%@ backingScale=%f viewport=(%f,%f) ortho=(0,0,%f,%f)",
+			  NSStringFromRect(r), backingScale,
+			  r.size.width * backingScale, r.size.height * backingScale,
+			  r.size.width * backingScale, r.size.height * backingScale);
+		
+		glViewport (0, 0, r.size.width * backingScale, r.size.height * backingScale);
 		
 		glMatrixMode (GL_PROJECTION);
 		glLoadIdentity ();
-		glOrtho (0, r.size.width, 0, r.size.height, -1, 1);
+		glOrtho (0, r.size.width * backingScale, 0, r.size.height * backingScale, -1, 1);
 		
 		glMatrixMode (GL_MODELVIEW);
 		glLoadIdentity ();
 		
 		_lastBounds = r;
-		
+        _lastBackingScale = self.window.backingScaleFactor;
+
 		[self viewBoundsDidChange:r];
     }
 }
@@ -206,7 +208,7 @@
 - (void)displayProfileChanged:(NSNotification*)notification
 {
 	CGDirectDisplayID oldDid = _did;
-	_did = (CGDirectDisplayID)[[[[[self window] screen] deviceDescription] objectForKey:@"NSScreenNumber"] pointerValue];
+	_did = [self.window.screen.deviceDescription[@"NSScreenNumber"] intValue];
 	if(_did == oldDid)
 		return;
 	
@@ -222,21 +224,23 @@
     CGLLockContext(_cglContext);
     {
 		
-        // Create a new CIContext using the new output color space		
-        [_context release];
-		
+        // Create a new CIContext using the new output color space
 		if(_contextOptions)
 		{
 			[_contextOptions setObject:[[NSUserDefaults standardUserDefaults] objectForKey:@"useSoftwareRenderer"] forKey:kCIContextUseSoftwareRenderer];
 		} else {
-			_contextOptions = [[NSMutableDictionary dictionaryWithObject:[[NSUserDefaults standardUserDefaults] objectForKey:@"useSoftwareRenderer"] forKey:kCIContextUseSoftwareRenderer] retain];
+			_contextOptions = [NSMutableDictionary dictionaryWithObject:[[NSUserDefaults standardUserDefaults] objectForKey:@"useSoftwareRenderer"] forKey:kCIContextUseSoftwareRenderer];
 		}
 		// For 10.6 onwards we use the new API but do not pass in a colorspace as. 
 		// Since the cgl context will be rendered to the display, it is valid to rely on CI to get the colorspace from the context.
-		_context = [[CIContext contextWithCGLContext:_cglContext pixelFormat:[_pf CGLPixelFormatObj] colorSpace:nil options:_contextOptions] retain];    
+		_context = [CIContext contextWithCGLContext:_cglContext pixelFormat:[_pf CGLPixelFormatObj] colorSpace:nil options:_contextOptions];
 	}
     CGLUnlockContext(_cglContext);
     
+    // Force matrix update to handle backing scale factor change (Retina <-> non-Retina)
+    _lastBounds = NSZeroRect;
+    [self updateMatrices];
+    [self setNeedsDisplay:YES];
 }
 
 
@@ -268,18 +272,24 @@
 //glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
 //glClear (GL_COLOR_BUFFER_BIT);
 
+		// Convert to backing coordinates for OpenGL operations
+		CGFloat backingScale = [self.window backingScaleFactor];
+		if (backingScale == 0.0) backingScale = 1.0;
+		
+		CGRect backingIR = CGRectMake(ir.origin.x * backingScale, ir.origin.y * backingScale,
+									  ir.size.width * backingScale, ir.size.height * backingScale);
 
-		rr = CGRectIntersection (CGRectInset (ir, -1.0f, -1.0f),
-								 *(CGRect *)&_lastBounds);
+		rr = CGRectIntersection (CGRectInset (backingIR, -1.0f, -1.0f),
+								 CGRectMake(0, 0, _lastBounds.size.width * backingScale, _lastBounds.size.height * backingScale));
 
-		glScissor (ir.origin.x, ir.origin.y, ir.size.width, ir.size.height);
+		glScissor (backingIR.origin.x, backingIR.origin.y, backingIR.size.width, backingIR.size.height);
 		glEnable (GL_SCISSOR_TEST);
 
 		glClear (GL_COLOR_BUFFER_BIT);
 
 		if ([self respondsToSelector:@selector (drawRect:inCIContext:)])  // for subclasses to provide their own drawing method
 		{
-NSLog(@"SI DRAWRECT");
+NSLog(@"SI DRAWRECT rr=%@", NSStringFromRect(rr));
 			[self drawRect:*(NSRect *)&rr inCIContext:_context];
 		}
 		else if (_image != nil)

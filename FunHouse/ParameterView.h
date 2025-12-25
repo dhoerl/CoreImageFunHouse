@@ -136,12 +136,7 @@ typedef enum
 @end
 
 @interface FunHouseImageView : NSImageView
-    {
-    NSString *_filePath;
-    }
-
-- (void)setFilePath:(NSString *)path;
-- (NSString *)filePath;
+@property (nonatomic) NSString *filePath;
 @end
 
 NSString *unInterCap(NSString *s);
